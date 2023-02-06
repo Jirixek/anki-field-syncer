@@ -4,7 +4,6 @@ from copy import copy
 from aqt import mw
 from aqt.utils import showInfo
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
-from typing import Optional
 import warnings
 
 warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning, module='bs4')
@@ -43,6 +42,30 @@ class Fetcher():
         self.this_note = this_note
         self.other_note = other_note
 
+        DEFAULT_FIELDS = {
+            'Cloze': {'Text'},
+            'Cloze (center)': {'Text'},
+            'Cloze (overlapping)': {'Original'},
+            'Cloze (overlapping) - algo': {'Input', 'Output', 'Original'},
+            'EQ': {'Assumptions', 'Text'},
+            'EQ (assumptions)': {'Assumptions', 'Text'},
+            'EQ (TEX)': {'Assumptions', 'Text'},
+            'EQ (TEX, assumptions)': {'Assumptions', 'Text'},
+            'IM': {'Assumptions', 'Text'},
+            'IM (assumptions)': {'Assumptions', 'Text'},
+            'IM (assumptions, reversed)': {'Assumptions', 'Text'},
+            'IM (reversed)': {'Assumptions', 'Text'},
+            'IM (TEX)': {'Assumptions', 'Text'},
+            'IM (TEX, assumptions)': {'Assumptions', 'Text'},
+            'IM (TEX, assumptions, reversed)': {'Assumptions', 'Text'},
+            'IM (TEX, reversed)': {'Assumptions', 'Text'},
+        }
+
+        notetype = self.other_note.note_type()['name']
+        if notetype not in DEFAULT_FIELDS:
+            raise ValueError('Unknown model')
+        self.other_fields = DEFAULT_FIELDS[notetype]
+
 
     @staticmethod
     def __strip_cloze(text: str):
@@ -66,22 +89,22 @@ class Fetcher():
         return text_other
 
 
-    def __fetch_field(self, field):
+    def __fetch_field(self, field: str):
         text = self.other_note[field]
         return self.__check_cycles(text)
 
 
-    def __fetch_cloze_field(self, field):
+    def __fetch_cloze_field(self, field: str):
         text = self.__strip_cloze(self.other_note[field])
         return self.__check_cycles(text)
 
 
-    def __fetch_cloze_overlapping_field(self, field):
+    def __fetch_cloze_overlapping_field(self, field: str):
         text = self.__strip_cloze_overlapping(self.other_note[field])
         return self.__check_cycles(text)
 
 
-    def __fetch_assumptions(self, bs):
+    def __fetch_assumptions(self, bs: BeautifulSoup):
         assumptions = self.__fetch_field('Assumptions')
         if len(assumptions) > 0:
             div = bs.new_tag('div')
@@ -92,7 +115,7 @@ class Fetcher():
             return ''
 
 
-    def __fetch_eq_im_text(self, bs):
+    def __fetch_eq_im_text(self, bs: BeautifulSoup):
         text = ''
         for field in self.TEXT_FIELD_MAP[self.other_note.note_type()['name']]:
             text += self.__fetch_field(field)
@@ -103,52 +126,52 @@ class Fetcher():
         return div
 
 
-    def __fetch_eq_im_text_tex(self, bs):
+    def __fetch_eq_im_text_tex(self, bs: BeautifulSoup):
         text = '\\[' + ' '.join([self.__fetch_field(field) for field in self.TEXT_FIELD_MAP[self.other_note.note_type()['name']]]) + '\\]'
         div = bs.new_tag('div')
         div.append(BeautifulSoup(text, 'html.parser'))
         return div
 
 
-    def __fetch_eq_im(self, fields: set):
+    def __fetch_eq_im(self):
         bs = BeautifulSoup(features='html.parser')
-        if 'Assumptions' in fields:
+        if 'Assumptions' in self.other_fields:
             bs.append(self.__fetch_assumptions(bs))
-        if 'Text' in fields:
+        if 'Text' in self.other_fields:
             bs.append(self.__fetch_eq_im_text(bs))
         return bs
 
 
-    def __fetch_eq_im_tex(self, fields: set):
+    def __fetch_eq_im_tex(self):
         bs = BeautifulSoup(features='html.parser')
-        if 'Assumptions' in fields:
+        if 'Assumptions' in self.other_fields:
             bs.append(self.__fetch_assumptions(bs))
-        if 'Text' in fields:
+        if 'Text' in self.other_fields:
             bs.append(self.__fetch_eq_im_text_tex(bs))
         return bs
 
 
-    def __fetch_cloze(self, fields: set):
+    def __fetch_cloze(self):
         bs = BeautifulSoup(features='html.parser')
-        if 'Text' in fields:
+        if 'Text' in self.other_fields:
             div = bs.new_tag('div')
             div.append(BeautifulSoup(self.__fetch_cloze_field('Text'), 'html.parser'))
             bs.append(div)
         return bs
 
 
-    def __fetch_cloze_overlapping(self, fields: set):
+    def __fetch_cloze_overlapping(self):
         bs = BeautifulSoup(features='html.parser')
-        if 'Original' in fields:
+        if 'Original' in self.other_fields:
             div = bs.new_tag('div')
             div.append(BeautifulSoup(self.__fetch_cloze_overlapping_field('Original'), 'html.parser'))
             bs.append(div)
         return bs
 
 
-    def __fetch_cloze_overlapping_algo(self, fields: set):
+    def __fetch_cloze_overlapping_algo(self):
         bs = BeautifulSoup(features='html.parser')
-        if 'Input' in fields:
+        if 'Input' in self.other_fields:
             text = self.other_note['Input']
             if len(text) > 0:
                 div = bs.new_tag('div')
@@ -158,7 +181,7 @@ class Fetcher():
                 div.append(span)
                 div.append(text)
                 bs.append(div)
-        if 'Output' in fields:
+        if 'Output' in self.other_fields:
             text = self.other_note['Output']
             if len(text) > 0:
                 div = bs.new_tag('div')
@@ -168,33 +191,14 @@ class Fetcher():
                 div.append(span)
                 div.append(text)
                 bs.append(div)
-        if 'Original' in fields:
+        if 'Original' in self.other_fields:
             div = bs.new_tag('div')
             div.append(BeautifulSoup(self.__fetch_cloze_overlapping_field('Original'), 'html.parser'))
             bs.append(div)
         return bs
 
 
-    def fetch(self, fields: Optional[set] = None):
-        DEFAULT_FIELDS = {
-            'Cloze': {'Text'},
-            'Cloze (center)': {'Text'},
-            'Cloze (overlapping)': {'Original'},
-            'Cloze (overlapping) - algo': {'Input', 'Output', 'Original'},
-            'EQ': {'Assumptions', 'Text'},
-            'EQ (assumptions)': {'Assumptions', 'Text'},
-            'EQ (TEX)': {'Assumptions', 'Text'},
-            'EQ (TEX, assumptions)': {'Assumptions', 'Text'},
-            'IM': {'Assumptions', 'Text'},
-            'IM (assumptions)': {'Assumptions', 'Text'},
-            'IM (assumptions, reversed)': {'Assumptions', 'Text'},
-            'IM (reversed)': {'Assumptions', 'Text'},
-            'IM (TEX)': {'Assumptions', 'Text'},
-            'IM (TEX, assumptions)': {'Assumptions', 'Text'},
-            'IM (TEX, assumptions, reversed)': {'Assumptions', 'Text'},
-            'IM (TEX, reversed)': {'Assumptions', 'Text'},
-        }
-
+    def fetch(self):
         EQ_IM_NAMES = {
             'EQ',
             'EQ (assumptions)',
@@ -215,21 +219,16 @@ class Fetcher():
 
         notetype = self.other_note.note_type()['name']
 
-        if fields is None:
-            if notetype not in DEFAULT_FIELDS:
-                raise ValueError('Unknown model')
-            fields = DEFAULT_FIELDS[notetype]
-
         if notetype in {'Cloze', 'Cloze (center)'}:
-            return self.__fetch_cloze(fields)
+            return self.__fetch_cloze()
         elif notetype == 'Cloze (overlapping)':
-            return self.__fetch_cloze_overlapping(fields)
+            return self.__fetch_cloze_overlapping()
         elif notetype == 'Cloze (overlapping) - algo':
-            return self.__fetch_cloze_overlapping_algo(fields)
+            return self.__fetch_cloze_overlapping_algo()
         elif notetype in EQ_IM_NAMES:
-            return self.__fetch_eq_im(fields)
+            return self.__fetch_eq_im()
         elif notetype in EQ_IM_TEX_NAMES:
-            return self.__fetch_eq_im_tex(fields)
+            return self.__fetch_eq_im_tex()
 
         raise ValueError('Unknown model')
 
@@ -264,8 +263,8 @@ def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int)
         span_new.clear()
         try:
             other_note = col.get_note(int(other_id))
-            other_fields = span.get('fields')
-            bs_new = Fetcher(this_note, other_note).fetch(other_fields)
+            # other_fields = span.get('fields')
+            bs_new = Fetcher(this_note, other_note).fetch()
             span_new.append(bs_new)
         except (ValueError, anki.errors.NotFoundError) as e:
             div = bs.new_tag('div')
