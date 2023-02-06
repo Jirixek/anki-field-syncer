@@ -438,3 +438,21 @@ def test_unknown_note_type():
 
     assert unidir.sync_field(col, n2, 0) == True
     assert n2['Front'] == f'<span class="sync" note="{n1.id}"><div>Unknown model</div></span>'
+
+
+def test_cycles():
+    col = get_empty_col()
+    cloze = col.models.by_name('Cloze')
+
+    n1 = col.new_note(cloze)
+    col.addNote(n1)
+    n2 = col.new_note(cloze)
+    n2['Text'] = f'Before2 <span class="sync" note="{n1.id}"></span> After2'
+    col.addNote(n2)
+    n1['Text'] = f'Before1 <span class="sync" note="{n2.id}"></span> After1'
+    col.update_note(n1)
+
+    assert unidir.sync_field(col, n1, 0) == True
+    assert unidir.sync_field(col, n2, 0) == True
+    assert n1['Text'] == f'Before1 <span class="sync" note="{n2.id}"><div>Cycle detected</div></span> After1'
+    assert n2['Text'] == f'Before2 <span class="sync" note="{n1.id}"><div>Cycle detected</div></span> After2'
