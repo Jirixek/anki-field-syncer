@@ -42,6 +42,7 @@ def create_custom_notes(col: anki.Collection):
 # copies from the master.
 _emptyCol: str | None = None
 
+
 def get_empty_col():
     global _emptyCol
     if not _emptyCol:
@@ -71,8 +72,8 @@ def test_sync_cloze():
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
-    assert n2['Front'] == f'<span class="sync" note="{n1.id}"><div>one</div></span>'
+    assert unidir.sync_field(col, n2, 0) is True
+    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one</div>\n</span>'
 
 
 def test_sync_n_clozes():
@@ -89,8 +90,8 @@ def test_sync_n_clozes():
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
-    assert n2['Front'] == f'<span class="sync" note="{n1.id}"><div>one two</div></span>'
+    assert unidir.sync_field(col, n2, 0) is True
+    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one two</div>\n</span>'
 
 
 def test_sync_cloze_hints():
@@ -107,8 +108,8 @@ def test_sync_cloze_hints():
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
-    assert n2['Front'] == f'<span class="sync" note="{n1.id}"><div>one</div></span>'
+    assert unidir.sync_field(col, n2, 0) is True
+    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one</div>\n</span>'
 
 
 def test_sync_n_clozes_hints():
@@ -125,8 +126,8 @@ def test_sync_n_clozes_hints():
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
-    assert n2['Front'] == f'<span class="sync" note="{n1.id}"><div>one two</div></span>'
+    assert unidir.sync_field(col, n2, 0) is True
+    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one two</div>\n</span>'
 
 
 @pytest.mark.parametrize('with_assumptions', [False, True])
@@ -149,12 +150,12 @@ def test_eq(model, with_assumptions):
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
-    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>' if with_assumptions else ''
+    assert unidir.sync_field(col, n2, 0) is True
+    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>\n' if with_assumptions else ''
     assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">' +
+        f'<span class="sync" note="{n1.id}">\n' +
         assumptions_expected +
-        f'<div class="first-upper">{n1["EQ1"]}{n1["Delimiter"]}{n1["EQ2"]}.</div>'
+        f'<div class="first-upper">{n1["EQ1"]}{n1["Delimiter"]}{n1["EQ2"]}.</div>\n'
         '</span>'
     )
 
@@ -179,12 +180,12 @@ def test_eq_tex(model, with_assumptions):
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
-    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>' if with_assumptions else ''
+    assert unidir.sync_field(col, n2, 0) is True
+    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>\n' if with_assumptions else ''
     assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">' +
+        f'<span class="sync" note="{n1.id}">\n' +
         assumptions_expected +
-        f'<div>\\[{n1["EQ1"]} {n1["Delimiter"]} {n1["EQ2"]}\\]</div>'
+        f'<div>\\[{n1["EQ1"]} {n1["Delimiter"]} {n1["EQ2"]}\\]</div>\n'
         '</span>'
     )
 
@@ -208,12 +209,12 @@ def test_im(model, with_assumptions):
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
-    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>' if with_assumptions else ''
+    assert unidir.sync_field(col, n2, 0) is True
+    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>\n' if with_assumptions else ''
     assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">' +
+        f'<span class="sync" note="{n1.id}">\n' +
         assumptions_expected +
-        f'<div class="first-upper">{n1["Context Left"]}{n1["Cloze"]}.</div>'
+        f'<div class="first-upper">{n1["Context Left"]}{n1["Cloze"]}.</div>\n'
         '</span>'
     )
 
@@ -239,12 +240,12 @@ def test_im_reversed(model, with_assumptions):
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
-    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>' if with_assumptions else ''
+    assert unidir.sync_field(col, n2, 0) is True
+    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>\n' if with_assumptions else ''
     assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">' +
+        f'<span class="sync" note="{n1.id}">\n' +
         assumptions_expected +
-        f'<div class="first-upper">{n1["Context Left"]}{n1["Cloze Left"]}{n1["Context Middle"]}{n1["Cloze Right"]}.</div>'
+        f'<div class="first-upper">{n1["Context Left"]}{n1["Cloze Left"]}{n1["Context Middle"]}{n1["Cloze Right"]}.</div>\n'
         '</span>'
     )
 
@@ -271,12 +272,12 @@ def test_im_tex(model, with_assumptions):
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
-    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>' if with_assumptions else ''
+    assert unidir.sync_field(col, n2, 0) is True
+    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>\n' if with_assumptions else ''
     assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">' +
+        f'<span class="sync" note="{n1.id}">\n' +
         assumptions_expected +
-        f'<div>\\[{n1["Cloze Left"]} {n1["Context Middle"]} {n1["Cloze Right"]}\\]</div>'
+        f'<div>\\[{n1["Cloze Left"]} {n1["Context Middle"]} {n1["Cloze Right"]}\\]</div>\n'
         '</span>'
     )
 
@@ -295,8 +296,8 @@ def test_nbsp():
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
-    assert n2['Front'] == f'<span class="sync" note="{n1.id}"><div>one&nbsp;two</div></span>'
+    assert unidir.sync_field(col, n2, 0) is True
+    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one&nbsp;two</div>\n</span>'
 
 
 def test_changed():
@@ -310,10 +311,10 @@ def test_changed():
     col.addNote(n1)
 
     n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"><div><div class="first-upper">cringeis&nbsp;cringe.</div></div></span>'
+    n2['Front'] = f'<span class="sync" note="{n1.id}">\n<div><div class="first-upper">cringeis&nbsp;cringe.</div></div>\n</span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == False
+    assert unidir.sync_field(col, n2, 0) is False
 
 
 def test_invalid_target_id_int():
@@ -327,10 +328,10 @@ def test_invalid_target_id_int():
     col.addNote(n1)
 
     n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="1234"></span>'
+    n2['Front'] = '<span class="sync" note="1234"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
+    assert unidir.sync_field(col, n2, 0) is True
     assert n2['Front'] == '<span class="sync" note="1234"><div>Invalid note ID</div></span>'
 
 
@@ -345,17 +346,17 @@ def test_invalid_target_id_string():
     col.addNote(n1)
 
     n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="foo"></span>'
+    n2['Front'] = '<span class="sync" note="foo"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
+    assert unidir.sync_field(col, n2, 0) is True
     assert n2['Front'] == '<span class="sync" note="foo"><div>Invalid note ID</div></span>'
 
 
 def test_invalid_arg_note():
     # e.g. card is being created
     col = get_empty_col()
-    assert unidir.sync_field(col, None, 0) == False
+    assert unidir.sync_field(col, None, 0) is False
     # No exception raised
 
 
@@ -370,10 +371,10 @@ def test_invalid_arg_field_id():
     col.addNote(n1)
 
     n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="foo"></span>'
+    n2['Front'] = '<span class="sync" note="foo"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 42) == False
+    assert unidir.sync_field(col, n2, 42) is False
     # No exception raised
 
 
@@ -391,7 +392,7 @@ def test_dont_change_spans_without_note_attribute():
     n2['Front'] = f'<span class="sync"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == False
+    assert unidir.sync_field(col, n2, 0) is False
     assert n2['Front'] == '<span class="sync"></span>'
 
 
@@ -409,7 +410,7 @@ def test_dont_change_spans_without_sync_class():
     n2['Front'] = f'<span note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == False
+    assert unidir.sync_field(col, n2, 0) is False
     assert n2['Front'] == f'<span note="{n1.id}"></span>'
 
 
@@ -436,7 +437,7 @@ def test_unknown_note_type():
     n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
     col.addNote(n2)
 
-    assert unidir.sync_field(col, n2, 0) == True
+    assert unidir.sync_field(col, n2, 0) is True
     assert n2['Front'] == f'<span class="sync" note="{n1.id}"><div>Unknown model</div></span>'
 
 
@@ -452,7 +453,7 @@ def test_cycles():
     n1['Text'] = f'Before1 <span class="sync" note="{n2.id}"></span> After1'
     col.update_note(n1)
 
-    assert unidir.sync_field(col, n1, 0) == True
-    assert unidir.sync_field(col, n2, 0) == True
+    assert unidir.sync_field(col, n1, 0) is True
+    assert unidir.sync_field(col, n2, 0) is True
     assert n1['Text'] == f'Before1 <span class="sync" note="{n2.id}"><div>Cycle detected</div></span> After1'
     assert n2['Text'] == f'Before2 <span class="sync" note="{n1.id}"><div>Cycle detected</div></span> After2'

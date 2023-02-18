@@ -1,83 +1,56 @@
 import re
 import anki
+import os
 from copy import copy
 from aqt import mw
 from aqt.utils import showInfo
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import warnings
+from typing import NamedTuple
 
 warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning, module='bs4')
 
 # TODO: additional hook editor_did_load_note?
-def _check_cycles(this, other):
-    pass
-
-
 def _show_synced_notes():
     # text field with clickable ids in menu bar
     pass
 
 
 class Fetcher():
-    TEXT_FIELD_MAP = {
-        'EQ': ('EQ1', 'Delimiter', 'EQ2'),
-        'EQ (assumptions)': ('EQ1', 'Delimiter', 'EQ2'),
-        'EQ (TEX)': ('EQ1', 'Delimiter', 'EQ2'),
-        'EQ (TEX, assumptions)': ('EQ1', 'Delimiter', 'EQ2'),
-        'IM': ('Context Left', 'Cloze'),
-        'IM (assumptions)': ('Context Left', 'Cloze'),
-        'IM (assumptions, reversed)': ('Context Left', 'Cloze Left', 'Context Middle', 'Cloze Right'),
-        'IM (reversed)': ('Context Left', 'Cloze Left', 'Context Middle', 'Cloze Right'),
-        'IM (TEX)': ('Cloze Left', 'Context Middle', 'Cloze Right'),
-        'IM (TEX, assumptions)': ('Cloze Left', 'Context Middle', 'Cloze Right'),
-        'IM (TEX, assumptions, reversed)': ('Cloze Left', 'Context Middle', 'Cloze Right'),
-        'IM (TEX, reversed)': ('Cloze Left', 'Context Middle', 'Cloze Right'),
-    }
-
+    TOKENS = [
+        ('STARTIF', r'{{#.*?}}'),
+        ('ENDIF',   r'{{/.*?}}'),
+        ('FIELD',   r'{{.*?}}'),
+        ('TEXT',    r'.'),
+    ]
+    RE_TOKENS = re.compile('|'.join(f'(?P<{kind}>{value})' for kind, value in TOKENS), re.DOTALL)
+    RE_FIELD = re.compile(r'{{(?P<field>[^:]+?)(?P<type>:\w*)?}}')
     RE_CLOZE = re.compile(r'{{c\d+::(.*?)(::.*?)?}}', re.DOTALL)
     RE_CLOZE_OVERLAPPER = re.compile(r'\[\[oc\d+::(.*?)(::.*?)?\]\]', re.DOTALL)
 
+    template_cache = {}
 
     def __init__(self, this_note: anki.notes.Note, other_note: anki.notes.Note):
         self.this_note = this_note
         self.other_note = other_note
-
-        DEFAULT_FIELDS = {
-            'Cloze': {'Text'},
-            'Cloze (center)': {'Text'},
-            'Cloze (overlapping)': {'Original'},
-            'Cloze (overlapping) - algo': {'Input', 'Output', 'Original'},
-            'EQ': {'Assumptions', 'Text'},
-            'EQ (assumptions)': {'Assumptions', 'Text'},
-            'EQ (TEX)': {'Assumptions', 'Text'},
-            'EQ (TEX, assumptions)': {'Assumptions', 'Text'},
-            'IM': {'Assumptions', 'Text'},
-            'IM (assumptions)': {'Assumptions', 'Text'},
-            'IM (assumptions, reversed)': {'Assumptions', 'Text'},
-            'IM (reversed)': {'Assumptions', 'Text'},
-            'IM (TEX)': {'Assumptions', 'Text'},
-            'IM (TEX, assumptions)': {'Assumptions', 'Text'},
-            'IM (TEX, assumptions, reversed)': {'Assumptions', 'Text'},
-            'IM (TEX, reversed)': {'Assumptions', 'Text'},
-        }
-
-        notetype = self.other_note.note_type()['name']
-        if notetype not in DEFAULT_FIELDS:
+        self.other_notetype = self.other_note.note_type()['name']
+        try:
+            if self.other_notetype not in self.template_cache:
+                with open(os.path.join(os.path.dirname(__file__),
+                                       f'./templates/{self.other_notetype}.html'), 'r') as f:
+                    self.template_cache[self.other_notetype] = self.tokenize(f.read())
+        except IOError:
             raise ValueError('Unknown model')
-        self.other_fields = DEFAULT_FIELDS[notetype]
 
-
-    @staticmethod
-    def __strip_cloze(text: str):
+    @classmethod
+    def __strip_cloze(cls, text: str):
         # TODO: nested clozes (add rust function)
-        return re.sub(Fetcher.RE_CLOZE, r'\1', text)
+        return Fetcher.RE_CLOZE.sub(r'\1', text)
 
-
-    @staticmethod
-    def __strip_cloze_overlapping(text: str):
+    @classmethod
+    def __strip_cloze_overlapping(cls, text: str):
         # TODO: nested clozes
-        return re.sub(Fetcher.RE_CLOZE_OVERLAPPER, r'\1', text)
-
+        return Fetcher.RE_CLOZE_OVERLAPPER.sub(r'\1', text)
 
     def __check_cycles(self, text_other: str):
         bs = BeautifulSoup(text_other, 'html.parser')
@@ -88,149 +61,78 @@ class Fetcher():
                 raise ValueError('Cycle detected')
         return text_other
 
-
     def __fetch_field(self, field: str):
         text = self.other_note[field]
         return self.__check_cycles(text)
-
 
     def __fetch_cloze_field(self, field: str):
         text = self.__strip_cloze(self.other_note[field])
         return self.__check_cycles(text)
 
-
     def __fetch_cloze_overlapping_field(self, field: str):
         text = self.__strip_cloze_overlapping(self.other_note[field])
         return self.__check_cycles(text)
 
+    class Token(NamedTuple):
+        type: str
+        value: str
 
-    def __fetch_assumptions(self, bs: BeautifulSoup):
-        assumptions = self.__fetch_field('Assumptions')
-        if len(assumptions) > 0:
-            div = bs.new_tag('div')
-            div['id'] = 'assumptions'
-            div.append(BeautifulSoup(assumptions, 'html.parser'))
-            return div
-        else:
-            return ''
-
-
-    def __fetch_eq_im_text(self, bs: BeautifulSoup):
+    @classmethod
+    def tokenize(cls, template):
+        tokens = []
         text = ''
-        for field in self.TEXT_FIELD_MAP[self.other_note.note_type()['name']]:
-            text += self.__fetch_field(field)
-        text += '.'
-        div = bs.new_tag('div')
-        div['class'] = ['first-upper']
-        div.append(BeautifulSoup(text, 'html.parser'))
-        return div
+        for m in cls.RE_TOKENS.finditer(template):
+            kind = m.lastgroup
+            value = m.group()
 
+            if kind != 'TEXT' and len(text) > 0:
+                tokens.append(Fetcher.Token('TEXT', text))
+                text = ''
 
-    def __fetch_eq_im_text_tex(self, bs: BeautifulSoup):
-        text = '\\[' + ' '.join([self.__fetch_field(field) for field in self.TEXT_FIELD_MAP[self.other_note.note_type()['name']]]) + '\\]'
-        div = bs.new_tag('div')
-        div.append(BeautifulSoup(text, 'html.parser'))
-        return div
+            if kind == 'STARTIF':
+                tokens.append(Fetcher.Token(kind, value[3:-2]))
+            elif kind == 'ENDIF':
+                tokens.append(Fetcher.Token(kind, value[3:-2]))
+            elif kind == 'FIELD':
+                m = cls.RE_FIELD.fullmatch(value)
+                m_field = m.group('field')
+                m_type = m.group('type')
+                if m_type == ':cloze':
+                    tokens.append(Fetcher.Token('FIELD_CLOZE', m_field))
+                elif m_type == ':cloze_overlapping':
+                    tokens.append(Fetcher.Token('FIELD_CLOZE_OVERLAPPING', m_field))
+                else:
+                    tokens.append(Fetcher.Token('FIELD_NORMAL', m_field))
+            elif kind == 'TEXT':
+                text += value
 
+        if len(text) > 0:
+            tokens.append(Fetcher.Token('TEXT', text))
 
-    def __fetch_eq_im(self):
-        bs = BeautifulSoup(features='html.parser')
-        if 'Assumptions' in self.other_fields:
-            bs.append(self.__fetch_assumptions(bs))
-        if 'Text' in self.other_fields:
-            bs.append(self.__fetch_eq_im_text(bs))
-        return bs
-
-
-    def __fetch_eq_im_tex(self):
-        bs = BeautifulSoup(features='html.parser')
-        if 'Assumptions' in self.other_fields:
-            bs.append(self.__fetch_assumptions(bs))
-        if 'Text' in self.other_fields:
-            bs.append(self.__fetch_eq_im_text_tex(bs))
-        return bs
-
-
-    def __fetch_cloze(self):
-        bs = BeautifulSoup(features='html.parser')
-        if 'Text' in self.other_fields:
-            div = bs.new_tag('div')
-            div.append(BeautifulSoup(self.__fetch_cloze_field('Text'), 'html.parser'))
-            bs.append(div)
-        return bs
-
-
-    def __fetch_cloze_overlapping(self):
-        bs = BeautifulSoup(features='html.parser')
-        if 'Original' in self.other_fields:
-            div = bs.new_tag('div')
-            div.append(BeautifulSoup(self.__fetch_cloze_overlapping_field('Original'), 'html.parser'))
-            bs.append(div)
-        return bs
-
-
-    def __fetch_cloze_overlapping_algo(self):
-        bs = BeautifulSoup(features='html.parser')
-        if 'Input' in self.other_fields:
-            text = self.other_note['Input']
-            if len(text) > 0:
-                div = bs.new_tag('div')
-                span = bs.new_tag('span')
-                span['class'] = ['bold']
-                span.string = 'Vstup: '
-                div.append(span)
-                div.append(text)
-                bs.append(div)
-        if 'Output' in self.other_fields:
-            text = self.other_note['Output']
-            if len(text) > 0:
-                div = bs.new_tag('div')
-                span = bs.new_tag('span')
-                span['class'] = ['bold']
-                span.string = 'Výstup: '
-                div.append(span)
-                div.append(text)
-                bs.append(div)
-        if 'Original' in self.other_fields:
-            div = bs.new_tag('div')
-            div.append(BeautifulSoup(self.__fetch_cloze_overlapping_field('Original'), 'html.parser'))
-            bs.append(div)
-        return bs
-
+        return tokens
 
     def fetch(self):
-        EQ_IM_NAMES = {
-            'EQ',
-            'EQ (assumptions)',
-            'IM',
-            'IM (assumptions)',
-            'IM (assumptions, reversed)',
-            'IM (reversed)'
-        }
+        out = '\n'
+        skip = ''
+        for token in self.template_cache[self.other_notetype]:
+            if skip != '' and (token.type != 'ENDIF' or token.value != skip):
+                continue
 
-        EQ_IM_TEX_NAMES = {
-            'EQ (TEX)',
-            'EQ (TEX, assumptions)',
-            'IM (TEX)',
-            'IM (TEX, assumptions)',
-            'IM (TEX, assumptions, reversed)',
-            'IM (TEX, reversed)'
-        }
+            if token.type == 'STARTIF':
+                if self.__fetch_field(token.value) == '':
+                    skip = token.value
+            elif token.type == 'ENDIF':
+                skip = ''
+            elif token.type == 'FIELD_NORMAL':
+                out += self.__fetch_field(token.value)
+            elif token.type == 'FIELD_CLOZE':
+                out += self.__fetch_cloze_field(token.value)
+            elif token.type == 'FIELD_CLOZE_OVERLAPPING':
+                out += self.__fetch_cloze_overlapping_field(token.value)
+            elif token.type == 'TEXT':
+                out += token.value
 
-        notetype = self.other_note.note_type()['name']
-
-        if notetype in {'Cloze', 'Cloze (center)'}:
-            return self.__fetch_cloze()
-        elif notetype == 'Cloze (overlapping)':
-            return self.__fetch_cloze_overlapping()
-        elif notetype == 'Cloze (overlapping) - algo':
-            return self.__fetch_cloze_overlapping_algo()
-        elif notetype in EQ_IM_NAMES:
-            return self.__fetch_eq_im()
-        elif notetype in EQ_IM_TEX_NAMES:
-            return self.__fetch_eq_im_tex()
-
-        raise ValueError('Unknown model')
+        return BeautifulSoup(out, features='html.parser')
 
 
 def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int):
