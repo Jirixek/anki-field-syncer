@@ -146,8 +146,8 @@ def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int)
 
     # TODO: multi_valued_attributes={'*': ['class', 'fields']}
 
-    if this_note is None:
-        return False  # e.g. card is being created
+    if this_note.id == 0:
+        return False  # the card is being created
     if field_idx < 0 or field_idx >= len(this_note.values()):
         return False  # should not happen
 

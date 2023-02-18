@@ -353,10 +353,20 @@ def test_invalid_target_id_string():
     assert n2['Front'] == '<span class="sync" note="foo"><div>Invalid note ID</div></span>'
 
 
-def test_invalid_arg_note():
-    # e.g. card is being created
+def test_card_is_being_created():
     col = get_empty_col()
-    assert unidir.sync_field(col, None, 0) is False
+
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
+
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one}}'
+    col.addNote(n1)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+
+    assert unidir.sync_field(col, n2, 0) is False
     # No exception raised
 
 
