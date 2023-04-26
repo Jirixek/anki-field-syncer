@@ -1,514 +1,289 @@
 import pytest
+import anki
 from . import unidir
 from .util import get_empty_col
+from typing import Sequence
 
 
-def test_sync_cloze():
-    col = get_empty_col()
+class TestBasicCloze():
+    def setup_method(self, method):
+        self.col = get_empty_col()
+        self.basic = self.col.models.by_name('Basic')
+        self.cloze = self.col.models.by_name('Cloze')
 
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
+    def test_sync_cloze(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one}}'
+        self.col.add_note(n1, 0)
 
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one}}'
-    col.add_note(n1, 0)
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
 
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one</div>\n</span>'
 
-    assert unidir.sync_field(col, n2, 0) is True
-    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one</div>\n</span>'
+    def test_sync_n_clozes(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one}} {{c2::two}}'
+        self.col.add_note(n1, 0)
 
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
 
-def test_sync_n_clozes():
-    col = get_empty_col()
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one two</div>\n</span>'
 
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
+    def test_sync_cloze_hints(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one::hint}}'
+        self.col.add_note(n1, 0)
 
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one}} {{c2::two}}'
-    col.add_note(n1, 0)
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
 
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one</div>\n</span>'
 
-    assert unidir.sync_field(col, n2, 0) is True
-    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one two</div>\n</span>'
+    def test_sync_n_clozes_hints(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one::h1}} {{c2::two::h2}}'
+        self.col.add_note(n1, 0)
 
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
 
-def test_sync_cloze_hints():
-    col = get_empty_col()
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one two</div>\n</span>'
 
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
+    def test_nbsp(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one&nbsp;two}}'
+        self.col.add_note(n1, 0)
 
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one::hint}}'
-    col.add_note(n1, 0)
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
 
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one&nbsp;two</div>\n</span>'
 
-    assert unidir.sync_field(col, n2, 0) is True
-    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one</div>\n</span>'
+    def test_changed(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '<div class="first-upper">cringeis&nbsp;cringe.</div>'
+        self.col.add_note(n1, 0)
 
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}">\n<div><div class="first-upper">cringeis&nbsp;cringe.</div></div>\n</span>'
+        self.col.add_note(n2, 0)
 
-def test_sync_n_clozes_hints():
-    col = get_empty_col()
+        assert unidir.sync_field(self.col, n2, 0) is False
 
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
+    def test_invalid_target_id_int(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one}}'
+        self.col.add_note(n1, 0)
 
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one::h1}} {{c2::two::h2}}'
-    col.add_note(n1, 0)
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = '<span class="sync" note="1234"></span>'
+        self.col.add_note(n2, 0)
 
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == '<span class="sync" note="1234"><div>Invalid note ID</div></span>'
 
-    assert unidir.sync_field(col, n2, 0) is True
-    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one two</div>\n</span>'
+    def test_invalid_target_id_string(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one}}'
+        self.col.add_note(n1, 0)
 
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = '<span class="sync" note="foo"></span>'
+        self.col.add_note(n2, 0)
 
-@pytest.mark.parametrize('with_assumptions', [False, True])
-@pytest.mark.parametrize('model', ['EQ', 'EQ (assumptions)'])
-def test_eq(model, with_assumptions):
-    col = get_empty_col()
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == '<span class="sync" note="foo"><div>Invalid note ID</div></span>'
 
-    basic = col.models.by_name('Basic')
-    eq = col.models.by_name(model)
+    def test_card_is_being_created(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one}}'
+        self.col.add_note(n1, 0)
 
-    n1 = col.new_note(eq)
-    n1['EQ1'] = 'EQ1'
-    n1['Delimiter'] = 'Delimiter'
-    n1['EQ2'] = 'EQ2'
-    n1['Assumptions'] = 'Assumptions' if with_assumptions else ''
-    col.add_note(n1, 0)
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
 
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
+        assert unidir.sync_field(self.col, n2, 0) is False
+        # No exception raised
 
-    assert unidir.sync_field(col, n2, 0) is True
-    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>\n' if with_assumptions else ''
-    assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">\n' +
-        assumptions_expected +
-        f'<div class="first-upper">{n1["EQ1"]}{n1["Delimiter"]}{n1["EQ2"]}.</div>\n'
-        '</span>'
-    )
+    def test_invalid_arg_field_id(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one}}'
+        self.col.add_note(n1, 0)
 
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = '<span class="sync" note="foo"></span>'
+        self.col.add_note(n2, 0)
 
-@pytest.mark.parametrize('with_assumptions', [False, True])
-@pytest.mark.parametrize('model', ['EQ (TEX)', 'EQ (TEX, assumptions)'])
-def test_eq_tex(model, with_assumptions):
-    col = get_empty_col()
+        assert unidir.sync_field(self.col, n2, 42) is False
+        # No exception raised
 
-    basic = col.models.by_name('Basic')
-    m = col.models.by_name(model)
+    def test_dont_change_spans_without_note_attribute(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one}}'
+        self.col.add_note(n1, 0)
 
-    n1 = col.new_note(m)
-    n1['EQ1'] = 'EQ1'
-    n1['Delimiter'] = 'Delimiter'
-    n1['EQ2'] = 'EQ2'
-    n1['Assumptions'] = 'Assumptions' if with_assumptions else ''
-    col.add_note(n1, 0)
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync"></span>'
+        self.col.add_note(n2, 0)
 
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
+        assert unidir.sync_field(self.col, n2, 0) is False
+        assert n2['Front'] == '<span class="sync"></span>'
 
-    assert unidir.sync_field(col, n2, 0) is True
-    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>\n' if with_assumptions else ''
-    assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">\n' +
-        assumptions_expected +
-        f'<div>\\[{n1["EQ1"]} {n1["Delimiter"]} {n1["EQ2"]}\\]</div>\n'
-        '</span>'
-    )
+    def test_dont_change_spans_without_sync_class(self):
+        n1 = self.col.new_note(self.cloze)
+        n1['Text'] = '{{c1::one}}'
+        self.col.add_note(n1, 0)
 
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
 
-@pytest.mark.parametrize('with_assumptions', [False, True])
-@pytest.mark.parametrize('model', ['IM', 'IM (assumptions)'])
-def test_im(model, with_assumptions):
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    m = col.models.by_name(model)
-
-    n1 = col.new_note(m)
-    n1['Context Left'] = 'Context Left'
-    n1['Cloze'] = 'Cloze'
-    n1['Assumptions'] = 'Assumptions' if with_assumptions else ''
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>\n' if with_assumptions else ''
-    assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">\n' +
-        assumptions_expected +
-        f'<div class="first-upper">{n1["Context Left"]}{n1["Cloze"]}.</div>\n'
-        '</span>'
-    )
+        assert unidir.sync_field(self.col, n2, 0) is False
+        assert n2['Front'] == f'<span note="{n1.id}"></span>'
 
 
 @pytest.mark.parametrize('with_assumptions', [False, True])
-@pytest.mark.parametrize('model', ['IM (reversed)', 'IM (assumptions, reversed)'])
-def test_im_reversed(model, with_assumptions):
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    m = col.models.by_name(model)
-
-    n1 = col.new_note(m)
-    n1['Context Left'] = 'Context Left'
-    n1['Cloze Left'] = 'Cloze Left'
-    n1['Context Middle'] = 'Context Middle'
-    n1['Cloze Right'] = 'Cloze Right'
-    n1['Assumptions'] = 'Assumptions' if with_assumptions else ''
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>\n' if with_assumptions else ''
-    assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">\n' +
-        assumptions_expected +
-        f'<div class="first-upper">{n1["Context Left"]}{n1["Cloze Left"]}{n1["Context Middle"]}{n1["Cloze Right"]}.</div>\n'
-        '</span>'
-    )
-
-
-@pytest.mark.parametrize('with_assumptions', [False, True])
-@pytest.mark.parametrize(
-    'model', ['IM (TEX)', 'IM (TEX, assumptions)',
-              'IM (TEX, reversed)', 'IM (TEX, assumptions, reversed)'])
-def test_im_tex(model, with_assumptions):
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    m = col.models.by_name(model)
-
-    n1 = col.new_note(m)
-    n1['Cloze Left'] = 'Cloze Left'
-    n1['Context Middle'] = 'Context Middle'
-    n1['Cloze Right'] = 'Cloze Right'
-    n1['Assumptions'] = 'Assumptions' if with_assumptions else ''
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assumptions_expected = '<div id=\"assumptions\">Assumptions</div>\n' if with_assumptions else ''
-    assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">\n' +
-        assumptions_expected +
-        f'<div>\\[{n1["Cloze Left"]} {n1["Context Middle"]} {n1["Cloze Right"]}\\]</div>\n'
-        '</span>'
-    )
-
-
-@pytest.mark.parametrize('with_assumptions', [False, True])
-@pytest.mark.parametrize('model', ['EQ', 'EQ (assumptions)'])
-def test_eq_with_hint(model, with_assumptions):
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    eq = col.models.by_name(model)
-
-    n1 = col.new_note(eq)
-    n1['EQ1'] = 'EQ1::hint_eq1'
-    n1['Delimiter'] = 'Delimiter'
-    n1['EQ2'] = 'EQ2::hint_eq2'
-    n1['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::assumption hint]]</li></ol>' if with_assumptions else ''
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assumptions_expected = '<div id=\"assumptions\"><ol><li>Assumption1</li><li>Before assumption2</li></ol></div>\n' if with_assumptions else ''
-    assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">\n' +
-        assumptions_expected +
-        f'<div class="first-upper">EQ1DelimiterEQ2.</div>\n'
-        '</span>'
-    )
-
-
-@pytest.mark.parametrize('with_assumptions', [False, True])
-@pytest.mark.parametrize('model', ['EQ (TEX)', 'EQ (TEX, assumptions)'])
-def test_eq_tex_with_hint(model, with_assumptions):
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    m = col.models.by_name(model)
-
-    n1 = col.new_note(m)
-    n1['EQ1'] = 'EQ1::hint_eq1'
-    n1['Delimiter'] = 'Delimiter'
-    n1['EQ2'] = 'EQ2::hint_eq2'
-    n1['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::assumption hint]]</li></ol>' if with_assumptions else ''
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assumptions_expected = '<div id=\"assumptions\"><ol><li>Assumption1</li><li>Before assumption2</li></ol></div>\n' if with_assumptions else ''
-    assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">\n' +
-        assumptions_expected +
-        f'<div>\\[EQ1 {n1["Delimiter"]} EQ2\\]</div>\n'
-        '</span>'
-    )
-
-
-@pytest.mark.parametrize('with_assumptions', [False, True])
-@pytest.mark.parametrize('model', ['IM', 'IM (assumptions)'])
-def test_im_with_hint(model, with_assumptions):
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    m = col.models.by_name(model)
-
-    n1 = col.new_note(m)
-    n1['Context Left'] = 'Context Left'
-    n1['Cloze'] = 'Cloze::hint'
-    n1['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::assumption hint]]</li></ol>' if with_assumptions else ''
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assumptions_expected = '<div id=\"assumptions\"><ol><li>Assumption1</li><li>Before assumption2</li></ol></div>\n' if with_assumptions else ''
-    assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">\n' +
-        assumptions_expected +
-        f'<div class="first-upper">{n1["Context Left"]}Cloze.</div>\n'
-        '</span>'
-    )
-
-
-@pytest.mark.parametrize('with_assumptions', [False, True])
-@pytest.mark.parametrize('model', ['IM (reversed)', 'IM (assumptions, reversed)'])
-def test_im_reversed_with_hint(model, with_assumptions):
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    m = col.models.by_name(model)
-
-    n1 = col.new_note(m)
-    n1['Context Left'] = 'Context Left'
-    n1['Cloze Left'] = 'Cloze Left::hint_cloze_left'
-    n1['Context Middle'] = 'Context Middle'
-    n1['Cloze Right'] = 'Cloze Right::hint_cloze_right'
-    n1['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::assumption hint]]</li></ol>' if with_assumptions else ''
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assumptions_expected = '<div id=\"assumptions\"><ol><li>Assumption1</li><li>Before assumption2</li></ol></div>\n' if with_assumptions else ''
-    assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">\n' +
-        assumptions_expected +
-        f'<div class="first-upper">{n1["Context Left"]}Cloze Left{n1["Context Middle"]}Cloze Right.</div>\n'
-        '</span>'
-    )
-
-
-@pytest.mark.parametrize('with_assumptions', [False, True])
-@pytest.mark.parametrize(
-    'model', ['IM (TEX)', 'IM (TEX, assumptions)',
-              'IM (TEX, reversed)', 'IM (TEX, assumptions, reversed)'])
-def test_im_tex_with_hint(model, with_assumptions):
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    m = col.models.by_name(model)
-
-    n1 = col.new_note(m)
-    n1['Cloze Left'] = 'Cloze Left::hint_cloze_left'
-    n1['Context Middle'] = 'Context Middle'
-    n1['Cloze Right'] = 'Cloze Right::hint_cloze_right'
-    n1['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::assumption hint]]</li></ol>' if with_assumptions else ''
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assumptions_expected = '<div id=\"assumptions\"><ol><li>Assumption1</li><li>Before assumption2</li></ol></div>\n' if with_assumptions else ''
-    assert n2['Front'] == (
-        f'<span class="sync" note="{n1.id}">\n' +
-        assumptions_expected +
-        f'<div>\\[Cloze Left {n1["Context Middle"]} Cloze Right\\]</div>\n'
-        '</span>'
-    )
-
-
-def test_nbsp():
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
-
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one&nbsp;two}}'
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one&nbsp;two</div>\n</span>'
-
-
-def test_changed():
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
-
-    n1 = col.new_note(cloze)
-    n1['Text'] = '<div class="first-upper">cringeis&nbsp;cringe.</div>'
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}">\n<div><div class="first-upper">cringeis&nbsp;cringe.</div></div>\n</span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is False
-
-
-def test_invalid_target_id_int():
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
-
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one}}'
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = '<span class="sync" note="1234"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assert n2['Front'] == '<span class="sync" note="1234"><div>Invalid note ID</div></span>'
-
-
-def test_invalid_target_id_string():
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
-
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one}}'
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = '<span class="sync" note="foo"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is True
-    assert n2['Front'] == '<span class="sync" note="foo"><div>Invalid note ID</div></span>'
-
-
-def test_card_is_being_created():
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
-
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one}}'
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-
-    assert unidir.sync_field(col, n2, 0) is False
-    # No exception raised
-
-
-def test_invalid_arg_field_id():
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
-
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one}}'
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = '<span class="sync" note="foo"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 42) is False
-    # No exception raised
-
-
-def test_dont_change_spans_without_note_attribute():
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
-
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one}}'
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is False
-    assert n2['Front'] == '<span class="sync"></span>'
-
-
-def test_dont_change_spans_without_sync_class():
-    col = get_empty_col()
-
-    basic = col.models.by_name('Basic')
-    cloze = col.models.by_name('Cloze')
-
-    n1 = col.new_note(cloze)
-    n1['Text'] = '{{c1::one}}'
-    col.add_note(n1, 0)
-
-    n2 = col.new_note(basic)
-    n2['Front'] = f'<span note="{n1.id}"></span>'
-    col.add_note(n2, 0)
-
-    assert unidir.sync_field(col, n2, 0) is False
-    assert n2['Front'] == f'<span note="{n1.id}"></span>'
+class TestImEq():
+    def setup_method(self, method):
+        self.col = get_empty_col()
+        self.basic = self.col.models.by_name('Basic')
+
+    def fill_im_eq_note(self, note: anki.notes.Note, with_assumptions: bool, hint_fields: Sequence[str]):
+        hint_fields = set(hint_fields)
+        for key in note.keys():
+            if key in hint_fields:
+                note[key] = f'{key}::Hint {key}'
+            else:
+                note[key] = str(key)
+
+        assumptions_expected_str = (
+            '<div id=\"assumptions\">'
+            '<ol><li>Assumption1</li><li>Before assumption2</li></ol>'
+            '</div>\n'
+        )
+        if with_assumptions and 'Assumptions' in hint_fields:
+            note['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::Hint Assumptions]]</li></ol>'
+            self.assumptions_expected = assumptions_expected_str
+        elif with_assumptions:
+            note['Assumptions'] = '<ol><li>Assumption1</li><li>Before assumption2</li></ol>'
+            self.assumptions_expected = assumptions_expected_str
+        else:
+            note['Assumptions'] = ''
+            self.assumptions_expected = ''
+
+    @pytest.mark.parametrize('hint_fields', [(), ('EQ1', 'EQ2')])
+    @pytest.mark.parametrize('model', ['EQ', 'EQ (assumptions)'])
+    def test_eq(self, model, with_assumptions, hint_fields):
+        eq = self.col.models.by_name(model)
+        n1 = self.col.new_note(eq)
+        self.fill_im_eq_note(n1, with_assumptions, hint_fields)
+        self.col.add_note(n1, 0)
+
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
+
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == (
+            f'<span class="sync" note="{n1.id}">\n' +
+            self.assumptions_expected +
+            f'<div class="first-upper">EQ1{n1["Delimiter"]}EQ2.</div>\n'
+            '</span>'
+        )
+
+    @pytest.mark.parametrize('hint_fields', [(), ('EQ1', 'EQ2')])
+    @pytest.mark.parametrize('model', ['EQ (TEX)', 'EQ (TEX, assumptions)'])
+    def test_eq_tex(self, model, with_assumptions, hint_fields):
+        m = self.col.models.by_name(model)
+        n1 = self.col.new_note(m)
+        self.fill_im_eq_note(n1, with_assumptions, hint_fields)
+        self.col.add_note(n1, 0)
+
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
+
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == (
+            f'<span class="sync" note="{n1.id}">\n' +
+            self.assumptions_expected +
+            f'<div>\\[EQ1 {n1["Delimiter"]} EQ2\\]</div>\n'
+            '</span>'
+        )
+
+    @pytest.mark.parametrize('hint_fields', [(), ('Cloze')])
+    @pytest.mark.parametrize('model', ['IM', 'IM (assumptions)'])
+    def test_im(self, model, with_assumptions, hint_fields):
+        m = self.col.models.by_name(model)
+        n1 = self.col.new_note(m)
+        self.fill_im_eq_note(n1, with_assumptions, hint_fields)
+        self.col.add_note(n1, 0)
+
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
+
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == (
+            f'<span class="sync" note="{n1.id}">\n' +
+            self.assumptions_expected +
+            f'<div class="first-upper">{n1["Context Left"]}Cloze.</div>\n'
+            '</span>'
+        )
+
+    @pytest.mark.parametrize('hint_fields', [(), ('Cloze Left', 'Cloze Right')])
+    @pytest.mark.parametrize('model', ['IM (reversed)', 'IM (assumptions, reversed)'])
+    def test_im_reversed(self, model, with_assumptions, hint_fields):
+        m = self.col.models.by_name(model)
+        n1 = self.col.new_note(m)
+        self.fill_im_eq_note(n1, with_assumptions, hint_fields)
+        self.col.add_note(n1, 0)
+
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
+
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == (
+            f'<span class="sync" note="{n1.id}">\n' +
+            self.assumptions_expected +
+            f'<div class="first-upper">{n1["Context Left"]}Cloze Left{n1["Context Middle"]}Cloze Right.</div>\n'
+            '</span>'
+        )
+
+    @pytest.mark.parametrize('hint_fields', [(), ('Cloze Left', 'Cloze Right')])
+    @pytest.mark.parametrize(
+        'model', ['IM (TEX)', 'IM (TEX, assumptions)',
+                  'IM (TEX, reversed)', 'IM (TEX, assumptions, reversed)'])
+    def test_im_tex(self, model, with_assumptions, hint_fields):
+        m = self.col.models.by_name(model)
+        n1 = self.col.new_note(m)
+        self.fill_im_eq_note(n1, with_assumptions, hint_fields)
+        self.col.add_note(n1, 0)
+
+        n2 = self.col.new_note(self.basic)
+        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+        self.col.add_note(n2, 0)
+
+        assert unidir.sync_field(self.col, n2, 0) is True
+        assert n2['Front'] == (
+            f'<span class="sync" note="{n1.id}">\n' +
+            self.assumptions_expected +
+            f'<div>\\[Cloze Left {n1["Context Middle"]} Cloze Right\\]</div>\n'
+            '</span>'
+        )
 
 
 def test_unknown_note_type():
