@@ -27,6 +27,8 @@ class Fetcher():
     RE_FIELD = re.compile(r'{{(?P<field>[^:]+?)(?P<type>:\w*)?}}')
     RE_CLOZE = re.compile(r'{{c\d+::(.*?)(::.*?)?}}', re.DOTALL)
     RE_CLOZE_OVERLAPPER = re.compile(r'\[\[oc\d+::(.*?)(::.*?)?\]\]', re.DOTALL)
+    RE_ASSUMPTION_HINT = re.compile(r'\[\[(.*?)(::.+?)?\]\]')
+    RE_EQ_IM_HINT = re.compile(r'(.*?)(::.*)?', re.DOTALL)
 
     template_cache = {}
 
@@ -52,6 +54,14 @@ class Fetcher():
         # TODO: nested clozes
         return Fetcher.RE_CLOZE_OVERLAPPER.sub(r'\1', text)
 
+    @classmethod
+    def __strip_assumption_hints(cls, text: str):
+        return Fetcher.RE_ASSUMPTION_HINT.sub(r'\1', text)
+
+    @classmethod
+    def __strip_im_eq_hints(cls, text: str):
+        return Fetcher.RE_EQ_IM_HINT.sub(r'\1', text)
+
     def __check_cycles(self, text_other: str):
         bs = BeautifulSoup(text_other, 'html.parser')
         spans = bs.find_all('span', {'class': 'sync', 'note': True}, recursive=False)
@@ -71,6 +81,14 @@ class Fetcher():
 
     def __fetch_cloze_overlapping_field(self, field: str):
         text = self.__strip_cloze_overlapping(self.other_note[field])
+        return self.__check_cycles(text)
+
+    def __fetch_assumptions_field(self, field: str):
+        text = self.__strip_assumption_hints(self.other_note[field])
+        return self.__check_cycles(text)
+
+    def __fetch_im_eq_hint_field(self, field: str):
+        text = self.__strip_im_eq_hints(self.other_note[field])
         return self.__check_cycles(text)
 
     class Token(NamedTuple):
@@ -101,6 +119,10 @@ class Fetcher():
                     tokens.append(Fetcher.Token('FIELD_CLOZE', m_field))
                 elif m_type == ':cloze_overlapping':
                     tokens.append(Fetcher.Token('FIELD_CLOZE_OVERLAPPING', m_field))
+                elif m_type == ':assumptions':
+                    tokens.append(Fetcher.Token('FIELD_ASSUMPTIONS', m_field))
+                elif m_type == ':with_im_eq_hint':
+                    tokens.append(Fetcher.Token('FIELD_IM_EQ_HINT', m_field))
                 else:
                     tokens.append(Fetcher.Token('FIELD_NORMAL', m_field))
             elif kind == 'TEXT':
@@ -129,6 +151,10 @@ class Fetcher():
                 out += self.__fetch_cloze_field(token.value)
             elif token.type == 'FIELD_CLOZE_OVERLAPPING':
                 out += self.__fetch_cloze_overlapping_field(token.value)
+            elif token.type == 'FIELD_ASSUMPTIONS':
+                out += self.__fetch_assumptions_field(token.value)
+            elif token.type == 'FIELD_IM_EQ_HINT':
+                out += self.__fetch_im_eq_hint_field(token.value)
             elif token.type == 'TEXT':
                 out += token.value
 

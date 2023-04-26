@@ -222,6 +222,153 @@ def test_im_tex(model, with_assumptions):
     )
 
 
+@pytest.mark.parametrize('with_assumptions', [False, True])
+@pytest.mark.parametrize('model', ['EQ', 'EQ (assumptions)'])
+def test_eq_with_hint(model, with_assumptions):
+    col = get_empty_col()
+
+    basic = col.models.by_name('Basic')
+    eq = col.models.by_name(model)
+
+    n1 = col.new_note(eq)
+    n1['EQ1'] = 'EQ1::hint_eq1'
+    n1['Delimiter'] = 'Delimiter'
+    n1['EQ2'] = 'EQ2::hint_eq2'
+    n1['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::assumption hint]]</li></ol>' if with_assumptions else ''
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+    col.add_note(n2, 0)
+
+    assert unidir.sync_field(col, n2, 0) is True
+    assumptions_expected = '<div id=\"assumptions\"><ol><li>Assumption1</li><li>Before assumption2</li></ol></div>\n' if with_assumptions else ''
+    assert n2['Front'] == (
+        f'<span class="sync" note="{n1.id}">\n' +
+        assumptions_expected +
+        f'<div class="first-upper">EQ1DelimiterEQ2.</div>\n'
+        '</span>'
+    )
+
+
+@pytest.mark.parametrize('with_assumptions', [False, True])
+@pytest.mark.parametrize('model', ['EQ (TEX)', 'EQ (TEX, assumptions)'])
+def test_eq_tex_with_hint(model, with_assumptions):
+    col = get_empty_col()
+
+    basic = col.models.by_name('Basic')
+    m = col.models.by_name(model)
+
+    n1 = col.new_note(m)
+    n1['EQ1'] = 'EQ1::hint_eq1'
+    n1['Delimiter'] = 'Delimiter'
+    n1['EQ2'] = 'EQ2::hint_eq2'
+    n1['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::assumption hint]]</li></ol>' if with_assumptions else ''
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+    col.add_note(n2, 0)
+
+    assert unidir.sync_field(col, n2, 0) is True
+    assumptions_expected = '<div id=\"assumptions\"><ol><li>Assumption1</li><li>Before assumption2</li></ol></div>\n' if with_assumptions else ''
+    assert n2['Front'] == (
+        f'<span class="sync" note="{n1.id}">\n' +
+        assumptions_expected +
+        f'<div>\\[EQ1 {n1["Delimiter"]} EQ2\\]</div>\n'
+        '</span>'
+    )
+
+
+@pytest.mark.parametrize('with_assumptions', [False, True])
+@pytest.mark.parametrize('model', ['IM', 'IM (assumptions)'])
+def test_im_with_hint(model, with_assumptions):
+    col = get_empty_col()
+
+    basic = col.models.by_name('Basic')
+    m = col.models.by_name(model)
+
+    n1 = col.new_note(m)
+    n1['Context Left'] = 'Context Left'
+    n1['Cloze'] = 'Cloze::hint'
+    n1['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::assumption hint]]</li></ol>' if with_assumptions else ''
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+    col.add_note(n2, 0)
+
+    assert unidir.sync_field(col, n2, 0) is True
+    assumptions_expected = '<div id=\"assumptions\"><ol><li>Assumption1</li><li>Before assumption2</li></ol></div>\n' if with_assumptions else ''
+    assert n2['Front'] == (
+        f'<span class="sync" note="{n1.id}">\n' +
+        assumptions_expected +
+        f'<div class="first-upper">{n1["Context Left"]}Cloze.</div>\n'
+        '</span>'
+    )
+
+
+@pytest.mark.parametrize('with_assumptions', [False, True])
+@pytest.mark.parametrize('model', ['IM (reversed)', 'IM (assumptions, reversed)'])
+def test_im_reversed_with_hint(model, with_assumptions):
+    col = get_empty_col()
+
+    basic = col.models.by_name('Basic')
+    m = col.models.by_name(model)
+
+    n1 = col.new_note(m)
+    n1['Context Left'] = 'Context Left'
+    n1['Cloze Left'] = 'Cloze Left::hint_cloze_left'
+    n1['Context Middle'] = 'Context Middle'
+    n1['Cloze Right'] = 'Cloze Right::hint_cloze_right'
+    n1['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::assumption hint]]</li></ol>' if with_assumptions else ''
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+    col.add_note(n2, 0)
+
+    assert unidir.sync_field(col, n2, 0) is True
+    assumptions_expected = '<div id=\"assumptions\"><ol><li>Assumption1</li><li>Before assumption2</li></ol></div>\n' if with_assumptions else ''
+    assert n2['Front'] == (
+        f'<span class="sync" note="{n1.id}">\n' +
+        assumptions_expected +
+        f'<div class="first-upper">{n1["Context Left"]}Cloze Left{n1["Context Middle"]}Cloze Right.</div>\n'
+        '</span>'
+    )
+
+
+@pytest.mark.parametrize('with_assumptions', [False, True])
+@pytest.mark.parametrize(
+    'model', ['IM (TEX)', 'IM (TEX, assumptions)',
+              'IM (TEX, reversed)', 'IM (TEX, assumptions, reversed)'])
+def test_im_tex_with_hint(model, with_assumptions):
+    col = get_empty_col()
+
+    basic = col.models.by_name('Basic')
+    m = col.models.by_name(model)
+
+    n1 = col.new_note(m)
+    n1['Cloze Left'] = 'Cloze Left::hint_cloze_left'
+    n1['Context Middle'] = 'Context Middle'
+    n1['Cloze Right'] = 'Cloze Right::hint_cloze_right'
+    n1['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::assumption hint]]</li></ol>' if with_assumptions else ''
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+    col.add_note(n2, 0)
+
+    assert unidir.sync_field(col, n2, 0) is True
+    assumptions_expected = '<div id=\"assumptions\"><ol><li>Assumption1</li><li>Before assumption2</li></ol></div>\n' if with_assumptions else ''
+    assert n2['Front'] == (
+        f'<span class="sync" note="{n1.id}">\n' +
+        assumptions_expected +
+        f'<div>\\[Cloze Left {n1["Context Middle"]} Cloze Right\\]</div>\n'
+        '</span>'
+    )
+
+
 def test_nbsp():
     col = get_empty_col()
 
