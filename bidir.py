@@ -69,7 +69,7 @@ def download(col: anki.Collection, nid: anki.notes.NoteId, sid: int):
         bs = BeautifulSoup(field_val, 'html.parser')
         spans = bs.find_all('span', {'class': 'sync', 'sid': sid}, recursive=False)
         if len(spans) > 0:
-            return spans[0].string
+            return spans[0]
     return None
 
 
@@ -93,7 +93,7 @@ def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int,
             continue
 
         sid = span['sid']
-        nids = col.find_notes(f'<span class=\\"sync\\" sid="{sid}">')
+        nids = col.find_notes(f'<span class=\\"sync\\" sid=\\"{sid}\\">')
         if are_spans_coherent(col, nids, sid):
             continue
 
@@ -102,12 +102,14 @@ def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int,
         else:
             answer = popup(sid)
 
-        nids.remove(this_note.id)
+        if this_note.id in nids:
+            nids.remove(this_note.id)
+
         if answer == 'Upload':
             upload(col, nids, span)
         else:
             # Idx 0 will always exist. If len(nids) == 1, spans are always coherent
-            span.string = download(col, nids[0], sid)
+            span.replace_with(download(col, nids[0], sid))
 
         changed = True
 
