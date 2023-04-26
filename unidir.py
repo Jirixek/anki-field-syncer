@@ -3,15 +3,15 @@ import anki
 import os
 from copy import copy
 from aqt import mw
-from aqt.utils import showInfo
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import warnings
 from typing import NamedTuple
 
-warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning, module='bs4')
+warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning)
 
-# TODO: additional hook editor_did_load_note?
+
 def _show_synced_notes():
+    # TODO: additional hook editor_did_load_note?
     # text field with clickable ids in menu bar
     pass
 
@@ -132,10 +132,10 @@ class Fetcher():
             elif token.type == 'TEXT':
                 out += token.value
 
-        return BeautifulSoup(out, features='html.parser')
+        return BeautifulSoup(out, 'html.parser')
 
 
-def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int):
+def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int) -> bool:
     # - find span with class 'sync' with 'note' attribute
     # - fetch optional 'fields' attribute (can contain special fields: text)
     # - or use defaults depending on the target note type)
@@ -144,7 +144,8 @@ def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int)
     #   - Algos: copy text, input, and output
     # - strip {{c1::}} and [[oc1::]]
 
-    # TODO: multi_valued_attributes={'*': ['class', 'fields']}
+    # TODO: support selection of fields to sync
+    # multi_valued_attributes={'*': ['class', 'fields']}
 
     if this_note.id == 0:
         return False  # the card is being created
@@ -186,7 +187,7 @@ def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int)
     return changed
 
 
-def sync_note(col: anki.Collection, note: anki.notes.Note):
+def sync_note(col: anki.Collection, note: anki.notes.Note) -> bool:
     for field in note.keys():
         sync_field(col, note, note._field_index(field))
 
