@@ -2,7 +2,7 @@ import anki
 from aqt.qt import QAction
 from aqt import gui_hooks, qconnect, mw
 from aqt.utils import showInfo
-from . import unidir
+from . import unidir, bidir
 
 
 def sync_spans():
@@ -13,7 +13,7 @@ def sync_spans():
 def on_editor_did_unfocus_field(changed: bool, note: anki.notes.Note, field_idx: int) -> bool:
     # return True if changes were made, otherwise return changed
     changed |= unidir.sync_field(mw.col, note, field_idx)
-    # changed |= bidir.sync_field(mw.col, note, field_idx)
+    changed |= bidir.sync_field(mw.col, note, field_idx)
     return changed
 
 
