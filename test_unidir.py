@@ -1,165 +1,225 @@
 import pytest
 import anki
 from . import unidir
-from .util import get_empty_col
 from typing import Sequence
+from .test_utils import get_empty_col, load_notes
 
 
-class TestBasicCloze():
-    def setup_method(self, method):
-        self.col = get_empty_col()
-        self.basic = self.col.models.by_name('Basic')
-        self.cloze = self.col.models.by_name('Cloze')
+@pytest.fixture
+def col():
+    return get_empty_col()
 
-    def test_sync_cloze(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one}}'
-        self.col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+def test_sync_cloze(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
 
-        assert unidir.sync_field(self.col, n2, 0) is True
-        assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one</div>\n</span>'
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one}}'
+    col.add_note(n1, 0)
 
-    def test_sync_n_clozes(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one}} {{c2::two}}'
-        self.col.add_note(n1, 0)
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+    col.add_note(n2, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+    assert unidir.sync_field(col, n2, 0) is True
+    load_notes((n1, n2))
 
-        assert unidir.sync_field(self.col, n2, 0) is True
-        assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one two</div>\n</span>'
+    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one</div>\n</span>'
 
-    def test_sync_cloze_hints(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one::hint}}'
-        self.col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+def test_sync_n_clozes(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
 
-        assert unidir.sync_field(self.col, n2, 0) is True
-        assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one</div>\n</span>'
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one}} {{c2::two}}'
+    col.add_note(n1, 0)
 
-    def test_sync_n_clozes_hints(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one::h1}} {{c2::two::h2}}'
-        self.col.add_note(n1, 0)
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+    col.add_note(n2, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+    assert unidir.sync_field(col, n2, 0) is True
+    load_notes((n1, n2))
 
-        assert unidir.sync_field(self.col, n2, 0) is True
-        assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one two</div>\n</span>'
+    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one two</div>\n</span>'
 
-    def test_nbsp(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one&nbsp;two}}'
-        self.col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+def test_sync_cloze_hints(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
 
-        assert unidir.sync_field(self.col, n2, 0) is True
-        assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one&nbsp;two</div>\n</span>'
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one::hint}}'
+    col.add_note(n1, 0)
 
-    def test_changed(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '<div class="first-upper">cringeis&nbsp;cringe.</div>'
-        self.col.add_note(n1, 0)
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+    col.add_note(n2, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = f'<span class="sync" note="{n1.id}">\n<div><div class="first-upper">cringeis&nbsp;cringe.</div></div>\n</span>'
-        self.col.add_note(n2, 0)
+    assert unidir.sync_field(col, n2, 0) is True
+    load_notes((n1, n2))
 
-        assert unidir.sync_field(self.col, n2, 0) is False
+    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one</div>\n</span>'
 
-    def test_invalid_target_id_int(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one}}'
-        self.col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = '<span class="sync" note="1234"></span>'
-        self.col.add_note(n2, 0)
+def test_sync_n_clozes_hints(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
 
-        assert unidir.sync_field(self.col, n2, 0) is True
-        assert n2['Front'] == '<span class="sync" note="1234"><div>Invalid note ID</div></span>'
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one::h1}} {{c2::two::h2}}'
+    col.add_note(n1, 0)
 
-    def test_invalid_target_id_string(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one}}'
-        self.col.add_note(n1, 0)
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+    col.add_note(n2, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = '<span class="sync" note="foo"></span>'
-        self.col.add_note(n2, 0)
+    assert unidir.sync_field(col, n2, 0) is True
+    load_notes((n1, n2))
 
-        assert unidir.sync_field(self.col, n2, 0) is True
-        assert n2['Front'] == '<span class="sync" note="foo"><div>Invalid note ID</div></span>'
+    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one two</div>\n</span>'
 
-    def test_card_is_being_created(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one}}'
-        self.col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+def test_nbsp(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
 
-        assert unidir.sync_field(self.col, n2, 0) is False
-        # No exception raised
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one&nbsp;two}}'
+    col.add_note(n1, 0)
 
-    def test_invalid_arg_field_id(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one}}'
-        self.col.add_note(n1, 0)
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+    col.add_note(n2, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = '<span class="sync" note="foo"></span>'
-        self.col.add_note(n2, 0)
+    assert unidir.sync_field(col, n2, 0) is True
+    load_notes((n1, n2))
 
-        assert unidir.sync_field(self.col, n2, 42) is False
-        # No exception raised
+    assert n2['Front'] == f'<span class="sync" note="{n1.id}">\n<div>one&nbsp;two</div>\n</span>'
 
-    def test_dont_change_spans_without_note_attribute(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one}}'
-        self.col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = f'<span class="sync"></span>'
-        self.col.add_note(n2, 0)
+def test_changed(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
 
-        assert unidir.sync_field(self.col, n2, 0) is False
-        assert n2['Front'] == '<span class="sync"></span>'
+    n1 = col.new_note(cloze)
+    n1['Text'] = '<div class="first-upper">cringeis&nbsp;cringe.</div>'
+    col.add_note(n1, 0)
 
-    def test_dont_change_spans_without_sync_class(self):
-        n1 = self.col.new_note(self.cloze)
-        n1['Text'] = '{{c1::one}}'
-        self.col.add_note(n1, 0)
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}">\n<div><div class="first-upper">cringeis&nbsp;cringe.</div></div>\n</span>'
+    col.add_note(n2, 0)
 
-        n2 = self.col.new_note(self.basic)
-        n2['Front'] = f'<span note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+    assert unidir.sync_field(col, n2, 0) is False
 
-        assert unidir.sync_field(self.col, n2, 0) is False
-        assert n2['Front'] == f'<span note="{n1.id}"></span>'
+
+def test_invalid_target_id_int(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
+
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one}}'
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = '<span class="sync" note="1234"></span>'
+    col.add_note(n2, 0)
+
+    assert unidir.sync_field(col, n2, 0) is True
+    load_notes((n1, n2))
+
+    assert n2['Front'] == '<span class="sync" note="1234"><div>Invalid note ID</div></span>'
+
+
+def test_invalid_target_id_string(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
+
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one}}'
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = '<span class="sync" note="foo"></span>'
+    col.add_note(n2, 0)
+
+    assert unidir.sync_field(col, n2, 0) is True
+    load_notes((n1, n2))
+
+    assert n2['Front'] == '<span class="sync" note="foo"><div>Invalid note ID</div></span>'
+
+
+def test_card_is_being_created(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
+
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one}}'
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
+
+    assert unidir.sync_field(col, n2, 0) is False
+    # No exception raised
+
+
+def test_invalid_arg_field_id(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
+
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one}}'
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = '<span class="sync" note="foo"></span>'
+    col.add_note(n2, 0)
+
+    assert unidir.sync_field(col, n2, 42) is False
+    # No exception raised
+
+
+def test_dont_change_spans_without_note_attribute(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
+
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one}}'
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span class="sync"></span>'
+    col.add_note(n2, 0)
+
+    assert unidir.sync_field(col, n2, 0) is False
+    load_notes((n1, n2))
+
+    assert n2['Front'] == '<span class="sync"></span>'
+
+
+def test_dont_change_spans_without_sync_class(col):
+    basic = col.models.by_name('Basic')
+    cloze = col.models.by_name('Cloze')
+
+    n1 = col.new_note(cloze)
+    n1['Text'] = '{{c1::one}}'
+    col.add_note(n1, 0)
+
+    n2 = col.new_note(basic)
+    n2['Front'] = f'<span note="{n1.id}"></span>'
+    col.add_note(n2, 0)
+
+    assert unidir.sync_field(col, n2, 0) is False
+    load_notes((n1, n2))
+
+    assert n2['Front'] == f'<span note="{n1.id}"></span>'
 
 
 @pytest.mark.parametrize('with_assumptions', [False, True])
 class TestImEq():
-    def setup_method(self, method):
-        self.col = get_empty_col()
-        self.basic = self.col.models.by_name('Basic')
-
     def fill_im_eq_note(self, note: anki.notes.Note, with_assumptions: bool, hint_fields: Sequence[str]):
         hint_fields = set(hint_fields)
         for key in note.keys():
@@ -185,17 +245,21 @@ class TestImEq():
 
     @pytest.mark.parametrize('hint_fields', [(), ('EQ1', 'EQ2')])
     @pytest.mark.parametrize('model', ['EQ', 'EQ (assumptions)'])
-    def test_eq(self, model, with_assumptions, hint_fields):
-        eq = self.col.models.by_name(model)
-        n1 = self.col.new_note(eq)
+    def test_eq(self, col, model, with_assumptions, hint_fields):
+        eq = col.models.by_name(model)
+        basic = col.models.by_name('Basic')
+
+        n1 = col.new_note(eq)
         self.fill_im_eq_note(n1, with_assumptions, hint_fields)
-        self.col.add_note(n1, 0)
+        col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
+        n2 = col.new_note(basic)
         n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+        col.add_note(n2, 0)
 
-        assert unidir.sync_field(self.col, n2, 0) is True
+        assert unidir.sync_field(col, n2, 0) is True
+        load_notes((n1, n2))
+
         assert n2['Front'] == (
             f'<span class="sync" note="{n1.id}">\n' +
             self.assumptions_expected +
@@ -205,17 +269,21 @@ class TestImEq():
 
     @pytest.mark.parametrize('hint_fields', [(), ('EQ1', 'EQ2')])
     @pytest.mark.parametrize('model', ['EQ (TEX)', 'EQ (TEX, assumptions)'])
-    def test_eq_tex(self, model, with_assumptions, hint_fields):
-        m = self.col.models.by_name(model)
-        n1 = self.col.new_note(m)
+    def test_eq_tex(self, col, model, with_assumptions, hint_fields):
+        m = col.models.by_name(model)
+        basic = col.models.by_name('Basic')
+
+        n1 = col.new_note(m)
         self.fill_im_eq_note(n1, with_assumptions, hint_fields)
-        self.col.add_note(n1, 0)
+        col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
+        n2 = col.new_note(basic)
         n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+        col.add_note(n2, 0)
 
-        assert unidir.sync_field(self.col, n2, 0) is True
+        assert unidir.sync_field(col, n2, 0) is True
+        load_notes((n1, n2))
+
         assert n2['Front'] == (
             f'<span class="sync" note="{n1.id}">\n' +
             self.assumptions_expected +
@@ -225,17 +293,21 @@ class TestImEq():
 
     @pytest.mark.parametrize('hint_fields', [(), ('Cloze')])
     @pytest.mark.parametrize('model', ['IM', 'IM (assumptions)'])
-    def test_im(self, model, with_assumptions, hint_fields):
-        m = self.col.models.by_name(model)
-        n1 = self.col.new_note(m)
+    def test_im(self, col, model, with_assumptions, hint_fields):
+        m = col.models.by_name(model)
+        basic = col.models.by_name('Basic')
+
+        n1 = col.new_note(m)
         self.fill_im_eq_note(n1, with_assumptions, hint_fields)
-        self.col.add_note(n1, 0)
+        col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
+        n2 = col.new_note(basic)
         n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+        col.add_note(n2, 0)
 
-        assert unidir.sync_field(self.col, n2, 0) is True
+        assert unidir.sync_field(col, n2, 0) is True
+        load_notes((n1, n2))
+
         assert n2['Front'] == (
             f'<span class="sync" note="{n1.id}">\n' +
             self.assumptions_expected +
@@ -245,17 +317,21 @@ class TestImEq():
 
     @pytest.mark.parametrize('hint_fields', [(), ('Cloze Left', 'Cloze Right')])
     @pytest.mark.parametrize('model', ['IM (reversed)', 'IM (assumptions, reversed)'])
-    def test_im_reversed(self, model, with_assumptions, hint_fields):
-        m = self.col.models.by_name(model)
-        n1 = self.col.new_note(m)
+    def test_im_reversed(self, col, model, with_assumptions, hint_fields):
+        m = col.models.by_name(model)
+        basic = col.models.by_name('Basic')
+
+        n1 = col.new_note(m)
         self.fill_im_eq_note(n1, with_assumptions, hint_fields)
-        self.col.add_note(n1, 0)
+        col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
+        n2 = col.new_note(basic)
         n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+        col.add_note(n2, 0)
 
-        assert unidir.sync_field(self.col, n2, 0) is True
+        assert unidir.sync_field(col, n2, 0) is True
+        load_notes((n1, n2))
+
         assert n2['Front'] == (
             f'<span class="sync" note="{n1.id}">\n' +
             self.assumptions_expected +
@@ -267,17 +343,21 @@ class TestImEq():
     @pytest.mark.parametrize(
         'model', ['IM (TEX)', 'IM (TEX, assumptions)',
                   'IM (TEX, reversed)', 'IM (TEX, assumptions, reversed)'])
-    def test_im_tex(self, model, with_assumptions, hint_fields):
-        m = self.col.models.by_name(model)
-        n1 = self.col.new_note(m)
+    def test_im_tex(self, col, model, with_assumptions, hint_fields):
+        m = col.models.by_name(model)
+        basic = col.models.by_name('Basic')
+
+        n1 = col.new_note(m)
         self.fill_im_eq_note(n1, with_assumptions, hint_fields)
-        self.col.add_note(n1, 0)
+        col.add_note(n1, 0)
 
-        n2 = self.col.new_note(self.basic)
+        n2 = col.new_note(basic)
         n2['Front'] = f'<span class="sync" note="{n1.id}"></span>'
-        self.col.add_note(n2, 0)
+        col.add_note(n2, 0)
 
-        assert unidir.sync_field(self.col, n2, 0) is True
+        assert unidir.sync_field(col, n2, 0) is True
+        load_notes((n1, n2))
+
         assert n2['Front'] == (
             f'<span class="sync" note="{n1.id}">\n' +
             self.assumptions_expected +
@@ -286,9 +366,7 @@ class TestImEq():
         )
 
 
-def test_unknown_note_type():
-    col = get_empty_col()
-
+def test_unknown_note_type(col):
     basic = col.models.by_name('Basic')
 
     models = col.models
@@ -310,11 +388,12 @@ def test_unknown_note_type():
     col.add_note(n2, 0)
 
     assert unidir.sync_field(col, n2, 0) is True
+    load_notes((n1, n2))
+
     assert n2['Front'] == f'<span class="sync" note="{n1.id}"><div>Unknown model</div></span>'
 
 
-def test_cycles():
-    col = get_empty_col()
+def test_cycles(col):
     cloze = col.models.by_name('Cloze')
 
     n1 = col.new_note(cloze)
@@ -327,5 +406,7 @@ def test_cycles():
 
     assert unidir.sync_field(col, n1, 0) is True
     assert unidir.sync_field(col, n2, 0) is True
+    load_notes((n1, n2))
+
     assert n1['Text'] == f'Before1 <span class="sync" note="{n2.id}"><div>Cycle detected</div></span> After1'
     assert n2['Text'] == f'Before2 <span class="sync" note="{n1.id}"><div>Cycle detected</div></span> After2'

@@ -1,9 +1,12 @@
 import re
 from . import bidir
-from .util import get_empty_col
+from .test_utils import get_empty_col, load_notes
+import pytest
 
-# TODO: reload all notes after sync
-# TODO: assert sync_field
+
+@pytest.fixture
+def col():
+    return get_empty_col()
 
 
 class MockPopup():
@@ -19,8 +22,7 @@ class MockPopup():
         return self.n_called
 
 
-def test_download_single():
-    col = get_empty_col()
+def test_download_single(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -31,16 +33,14 @@ def test_download_single():
     n2['Front'] = '<span class="sync" sid="1">New content</span>'
     col.add_note(n2, 0)
 
-    bidir.sync_field(col, n2, 0, MockPopup('Download'))
-    n1.load()
-    n2.load()
+    assert bidir.sync_field(col, n2, 0, MockPopup('Download')) is True
+    load_notes((n1, n2))
 
     assert n1['Front'] == '<span class="sync" sid="1">Original content</span>'
     assert n2['Front'] == '<span class="sync" sid="1">Original content</span>'
 
 
-def test_download_multiple():
-    col = get_empty_col()
+def test_download_multiple(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -55,18 +55,15 @@ def test_download_multiple():
     n3['Front'] = '<span class="sync" sid="1">New content</span>'
     col.add_note(n3, 0)
 
-    bidir.sync_field(col, n3, 0, MockPopup('Download'))
-    n1.load()
-    n2.load()
-    n3.load()
+    assert bidir.sync_field(col, n3, 0, MockPopup('Download')) is True
+    load_notes((n1, n2, n3))
 
     assert n1['Front'] == '<span class="sync" sid="1">Original content</span>'
     assert n2['Front'] == '<span class="sync" sid="1">Original content</span>'
     assert n3['Front'] == '<span class="sync" sid="1">Original content</span>'
 
 
-def test_upload_single():
-    col = get_empty_col()
+def test_upload_single(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -77,16 +74,14 @@ def test_upload_single():
     n2['Front'] = '<span class="sync" sid="1">New content</span>'
     col.add_note(n2, 0)
 
-    bidir.sync_field(col, n2, 0, MockPopup('Upload'))
-    n1.load()
-    n2.load()
+    assert bidir.sync_field(col, n2, 0, MockPopup('Upload')) is True
+    load_notes((n1, n2))
 
     assert n1['Front'] == '<span class="sync" sid="1">New content</span>'
     assert n2['Front'] == '<span class="sync" sid="1">New content</span>'
 
 
-def test_upload_multiple():
-    col = get_empty_col()
+def test_upload_multiple(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -101,18 +96,15 @@ def test_upload_multiple():
     n3['Front'] = '<span class="sync" sid="1">New content</span>'
     col.add_note(n3, 0)
 
-    bidir.sync_field(col, n3, 0, MockPopup('Upload'))
-    n1.load()
-    n2.load()
-    n3.load()
+    assert bidir.sync_field(col, n3, 0, MockPopup('Upload')) is True
+    load_notes((n1, n2, n3))
 
     assert n1['Front'] == '<span class="sync" sid="1">New content</span>'
     assert n2['Front'] == '<span class="sync" sid="1">New content</span>'
     assert n3['Front'] == '<span class="sync" sid="1">New content</span>'
 
 
-def test_download_different_ids():
-    col = get_empty_col()
+def test_download_different_ids(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -123,13 +115,14 @@ def test_download_different_ids():
     n2['Front'] = '<span class="sync" sid="2">ID2</span>'
     col.add_note(n2, 0)
 
-    bidir.sync_field(col, n2, 0, MockPopup('Download'))
+    assert bidir.sync_field(col, n2, 0, MockPopup('Download')) is False
+    load_notes((n1, n2))
+
     assert n1['Front'] == '<span class="sync" sid="1">ID1</span>'
     assert n2['Front'] == '<span class="sync" sid="2">ID2</span>'
 
 
-def test_upload_different_ids():
-    col = get_empty_col()
+def test_upload_different_ids(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -140,37 +133,40 @@ def test_upload_different_ids():
     n2['Front'] = '<span class="sync" sid="2">ID2</span>'
     col.add_note(n2, 0)
 
-    bidir.sync_field(col, n2, 0, MockPopup('Upload'))
+    assert bidir.sync_field(col, n2, 0, MockPopup('Upload')) is False
+    load_notes((n1, n2))
+
     assert n1['Front'] == '<span class="sync" sid="1">ID1</span>'
     assert n2['Front'] == '<span class="sync" sid="2">ID2</span>'
 
 
-def test_download_single_card():
-    col = get_empty_col()
+def test_download_single_card(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
     n1['Front'] = '<span class="sync" sid="1">Content</span>'
     col.add_note(n1, 0)
 
-    bidir.sync_field(col, n1, 0, MockPopup('Download'))
+    assert bidir.sync_field(col, n1, 0, MockPopup('Download')) is False
+    load_notes((n1,))
+
     assert n1['Front'] == '<span class="sync" sid="1">Content</span>'
 
 
-def test_upload_single_card():
-    col = get_empty_col()
+def test_upload_single_card(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
     n1['Front'] = '<span class="sync" sid="1">Content</span>'
     col.add_note(n1, 0)
 
-    bidir.sync_field(col, n1, 0, MockPopup('Upload'))
+    assert bidir.sync_field(col, n1, 0, MockPopup('Upload')) is False
+    load_notes((n1,))
+
     assert n1['Front'] == '<span class="sync" sid="1">Content</span>'
 
 
-def test_no_change():
-    col = get_empty_col()
+def test_no_change(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -182,14 +178,16 @@ def test_no_change():
     col.add_note(n2, 0)
 
     popup = MockPopup('Download')
+
     assert bidir.sync_field(col, n2, 0, popup) is False
+    load_notes((n1, n2))
+
     assert popup.n_called == 0
     assert n1['Front'] == '<span class="sync" sid="1">Original content</span>'
     assert n2['Front'] == '<span class="sync" sid="1">Original content</span>'
 
 
-def test_empty_span_always_downloaded():
-    col = get_empty_col()
+def test_empty_span_always_downloaded(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -201,14 +199,16 @@ def test_empty_span_always_downloaded():
     col.add_note(n2, 0)
 
     popup = MockPopup('Download')
+
     assert bidir.sync_field(col, n1, 0, popup) is True
+    load_notes((n1, n2))
+
     assert popup.n_called == 0
     assert n1['Front'] == '<span class="sync" sid="1">Original content</span>'
     assert n2['Front'] == '<span class="sync" sid="1">Original content</span>'
 
 
-def test_change_popup():
-    col = get_empty_col()
+def test_change_popup(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -219,18 +219,15 @@ def test_change_popup():
     n2['Front'] = '<span class="sync" sid="1">Garbage</span>'
     col.add_note(n2, 0)
 
-    popup_called = False
+    popup = MockPopup('Download')
 
-    def popup_func(sid: str):
-        nonlocal popup_called
-        popup_called = True
-        return 'Download'
-    assert bidir.sync_field(col, n2, 0, popup_func) is True
-    assert popup_called is True
+    assert bidir.sync_field(col, n2, 0, popup) is True
+    load_notes((n1, n2))
+
+    assert popup.n_called == 1
 
 
-def test_span_coherency_homogenous():
-    col = get_empty_col()
+def test_span_coherency_homogenous(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -244,8 +241,7 @@ def test_span_coherency_homogenous():
     assert bidir.are_spans_coherent(col, [n1.id, n2.id], 1) is True
 
 
-def test_span_coherency_non_homogenous():
-    col = get_empty_col()
+def test_span_coherency_non_homogenous(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -263,8 +259,7 @@ def test_span_coherency_non_homogenous():
     assert bidir.are_spans_coherent(col, [n1.id, n2.id, n3.id], 1) is False
 
 
-def test_card_is_being_created():
-    col = get_empty_col()
+def test_card_is_being_created(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -278,8 +273,7 @@ def test_card_is_being_created():
     # No exception raised
 
 
-def test_dont_change_spans_without_class():
-    col = get_empty_col()
+def test_dont_change_spans_without_class(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -291,11 +285,12 @@ def test_dont_change_spans_without_class():
     col.add_note(n2, 0)
 
     assert bidir.sync_field(col, n2, 0, MockPopup('Download')) is False
+    load_notes((n1, n2))
+
     assert n2['Front'] == f'<span sid="1"></span>'
 
 
-def test_id_missing():
-    col = get_empty_col()
+def test_id_missing(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
@@ -303,35 +298,31 @@ def test_id_missing():
     col.add_note(n1, 0)
 
     assert bidir.sync_field(col, n1, 0, MockPopup('Download')) is True
+    load_notes((n1,))
+
     assert re.fullmatch(f'<span class="sync" sid="{n1.id}_0_' + r'\d{4}' + f'">Content</span>', n1['Front'])
 
 
-def test_id_missing_multiple_spans_in_note():
-    col = get_empty_col()
+def test_id_missing_multiple_spans_in_note(col):
     basic = col.models.by_name('Basic')
 
     n1 = col.new_note(basic)
-    n1['Front'] = '<span class="sync">Content</span>'
-    col.add_note(n1, 0)
-
-    assert bidir.sync_field(col, n1, 0, MockPopup('Download')) is True
-    n1.load()
-    assert re.fullmatch(f'<span class="sync" sid="{n1.id}_0_' + r'\d{4}' + f'">Content</span>', n1['Front'])
-
     n1['Front'] = (
-        f'<span class="sync" sid="{n1.id}1">Content</span>'
+        f'<span class="sync" sid="1">Content</span>'
         '<span class="sync">Another</span>'
     )
-    col.update_note(n1)
+    col.add_note(n1, 0)
 
     assert bidir.sync_field(col, n1, 0, MockPopup('Download')) is True
-    n1.load()
+    load_notes((n1,))
+
+    print(n1['Front'])
     assert re.fullmatch((
-        f'<span class="sync" sid="{n1.id}1">Content</span>'
+        f'<span class="sync" sid="1">Content</span>'
         f'<span class="sync" sid="{n1.id}_0_' + r'\d{4}' + f'">Another</span>'
     ), n1['Front'])
 
-
+# TODO
 # def test_nested_spans():
 #     pass
 
