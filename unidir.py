@@ -222,7 +222,7 @@ def sync_note(col: anki.Collection, note: anki.notes.Note) -> bool:
 
 def sync_all() -> int:
     n_changed = 0
-    ids = mw.col.find_notes('span class=\\"sync\\" note=')
+    ids = mw.col.find_notes('<span class=\\"sync\\" note=')
     for note_id in ids:
         note = mw.col.get_note(note_id)
         changed = sync_note(mw.col, note)
