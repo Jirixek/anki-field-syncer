@@ -14,7 +14,7 @@ class MockPopup():
         self.return_value = return_value
         self.n_called = 0
 
-    def __call__(self, sid: int):
+    def __call__(self, _):
         self.n_called += 1
         return self.return_value
 
@@ -267,7 +267,7 @@ def test_card_is_being_created(col):
     col.add_note(n1, 0)
 
     n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" sid="1"></span>'
+    n2['Front'] = '<span class="sync" sid="1"></span>'
 
     assert bidir.sync_field(col, n2, 0, MockPopup('Download')) is False
     # No exception raised
@@ -281,13 +281,13 @@ def test_dont_change_spans_without_class(col):
     col.add_note(n1, 0)
 
     n2 = col.new_note(basic)
-    n2['Front'] = f'<span sid="1"></span>'
+    n2['Front'] = '<span sid="1"></span>'
     col.add_note(n2, 0)
 
     assert bidir.sync_field(col, n2, 0, MockPopup('Download')) is False
     load_notes((n1, n2))
 
-    assert n2['Front'] == f'<span sid="1"></span>'
+    assert n2['Front'] == '<span sid="1"></span>'
 
 
 def test_id_missing(col):
@@ -300,7 +300,7 @@ def test_id_missing(col):
     assert bidir.sync_field(col, n1, 0, MockPopup('Download')) is True
     load_notes((n1,))
 
-    assert re.fullmatch(f'<span class="sync" sid="{n1.id}_0_' + r'\d{4}' + f'">Content</span>', n1['Front'])
+    assert re.fullmatch(f'<span class="sync" sid="{n1.id}_0_' + r'\d{4}' + '">Content</span>', n1['Front'])
 
 
 def test_id_missing_multiple_spans_in_note(col):
@@ -308,7 +308,7 @@ def test_id_missing_multiple_spans_in_note(col):
 
     n1 = col.new_note(basic)
     n1['Front'] = (
-        f'<span class="sync" sid="1">Content</span>'
+        '<span class="sync" sid="1">Content</span>'
         '<span class="sync">Another</span>'
     )
     col.add_note(n1, 0)
@@ -319,7 +319,7 @@ def test_id_missing_multiple_spans_in_note(col):
     print(n1['Front'])
     assert re.fullmatch((
         f'<span class="sync" sid="1">Content</span>'
-        f'<span class="sync" sid="{n1.id}_0_' + r'\d{4}' + f'">Another</span>'
+        f'<span class="sync" sid="{n1.id}_0_' + r'\d{4}' + '">Another</span>'
     ), n1['Front'])
 
 # TODO

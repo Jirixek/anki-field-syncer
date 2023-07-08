@@ -19,9 +19,9 @@ def _show_synced_notes():
 class Fetcher():
     TOKENS = [
         ('STARTIF', r'{{#.*?}}'),
-        ('ENDIF',   r'{{/.*?}}'),
-        ('FIELD',   r'{{.*?}}'),
-        ('TEXT',    r'.'),
+        ('ENDIF', r'{{/.*?}}'),
+        ('FIELD', r'{{.*?}}'),
+        ('TEXT', r'.'),
     ]
     RE_TOKENS = re.compile('|'.join(f'(?P<{kind}>{value})' for kind, value in TOKENS), re.DOTALL)
     RE_FIELD = re.compile(r'{{(?P<field>[^:]+?)(?P<type>:\w*)?}}')

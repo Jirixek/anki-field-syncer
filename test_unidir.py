@@ -109,7 +109,11 @@ def test_changed(col):
     col.add_note(n1, 0)
 
     n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync" note="{n1.id}">\n<div><div class="first-upper">cringeis&nbsp;cringe.</div></div>\n</span>'
+    n2['Front'] = (
+        f'<span class="sync" note="{n1.id}">\n'
+        '<div><div class="first-upper">cringeis&nbsp;cringe.</div></div>\n'
+        '</span>'
+    )
     col.add_note(n2, 0)
 
     assert unidir.sync_field(col, n2, 0) is False
