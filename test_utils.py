@@ -13,18 +13,12 @@ _empty_col: str | None = None
 
 def _create_custom_notes(col: anki.Collection):
     CUSTOM_NOTES = {
-        'EQ': ('EQ1', 'Delimiter', 'EQ2', 'Assumptions'),
-        'EQ (assumptions)': ('EQ1', 'Delimiter', 'EQ2', 'Assumptions'),
-        'EQ (TEX)': ('EQ1', 'Delimiter', 'EQ2', 'Assumptions'),
-        'EQ (TEX, assumptions)': ('EQ1', 'Delimiter', 'EQ2', 'Assumptions'),
-        'IM': ('Context Left', 'Cloze', 'Assumptions'),
-        'IM (assumptions)': ('Context Left', 'Cloze', 'Assumptions'),
-        'IM (assumptions, reversed)': ('Context Left', 'Cloze Left', 'Context Middle', 'Cloze Right', 'Assumptions'),
-        'IM (reversed)': ('Context Left', 'Cloze Left', 'Context Middle', 'Cloze Right', 'Assumptions'),
-        'IM (TEX)': ('Cloze Left', 'Context Middle', 'Cloze Right', 'Assumptions'),
-        'IM (TEX, assumptions)': ('Cloze Left', 'Context Middle', 'Cloze Right', 'Assumptions'),
-        'IM (TEX, assumptions, reversed)': ('Cloze Left', 'Context Middle', 'Cloze Right', 'Assumptions'),
-        'IM (TEX, reversed)': ('Cloze Left', 'Context Middle', 'Cloze Right', 'Assumptions'),
+        'EQ': ('EQ1', 'Delimiter', 'EQ2', 'Context', 'Assumptions'),
+        'EQ (TEX)': ('EQ1', 'Delimiter', 'EQ2', 'Context', 'Assumptions'),
+        'IM': ('Context Left', 'Cloze', 'Context', 'Assumptions'),
+        'IM (reversed)': ('Context Left', 'Cloze Left', 'Context Middle', 'Cloze Right', 'Context', 'Assumptions'),
+        'IM (TEX)': ('Cloze Left', 'Delimiter', 'Cloze Right', 'Context', 'Assumptions'),
+        'IM (TEX, reversed)': ('Cloze Left', 'Delimiter', 'Cloze Right', 'Context', 'Assumptions'),
     }
 
     for name, fields in CUSTOM_NOTES.items():

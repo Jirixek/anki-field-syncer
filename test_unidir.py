@@ -191,7 +191,7 @@ def test_dont_change_spans_without_note_attribute(col):
     col.add_note(n1, 0)
 
     n2 = col.new_note(basic)
-    n2['Front'] = f'<span class="sync"></span>'
+    n2['Front'] = '<span class="sync"></span>'
     col.add_note(n2, 0)
 
     assert unidir.sync_field(col, n2, 0) is False
@@ -218,9 +218,11 @@ def test_dont_change_spans_without_sync_class(col):
     assert n2['Front'] == f'<span note="{n1.id}"></span>'
 
 
+@pytest.mark.parametrize('with_context', [False, True])
 @pytest.mark.parametrize('with_assumptions', [False, True])
 class TestImEq():
-    def fill_im_eq_note(self, note: anki.notes.Note, with_assumptions: bool, hint_fields: Sequence[str]):
+    def fill_im_eq_note(self, note: anki.notes.Note, with_context: bool,
+                        with_assumptions: bool, hint_fields: Sequence[str]):
         hint_fields = set(hint_fields)
         for key in note.keys():
             if key in hint_fields:
@@ -228,29 +230,44 @@ class TestImEq():
             else:
                 note[key] = str(key)
 
+        context_expected_str = (
+            '<div id=\"context\">'
+            '<ol><li>Context1</li><li>Longer context2</li></ol>'
+            '</div>\n'
+        )
+        if with_context:
+            note['Context'] = '<ol><li>Context1</li><li>Longer context2</li></ol>'
+            context_expected = context_expected_str
+        else:
+            note['Context'] = ''
+            context_expected = ''
+
         assumptions_expected_str = (
-            '<div id=\"assumptions\">'
+            '<div class=\"assumptions-body\" id=\"assumptions\">'
             '<ol><li>Assumption1</li><li>Before assumption2</li></ol>'
             '</div>\n'
         )
-        if with_assumptions and 'Assumptions' in hint_fields:
+        if with_assumptions:
             note['Assumptions'] = '<ol><li>Assumption1</li><li>Before [[assumption2::Hint Assumptions]]</li></ol>'
-            self.assumptions_expected = assumptions_expected_str
-        elif with_assumptions:
-            note['Assumptions'] = '<ol><li>Assumption1</li><li>Before assumption2</li></ol>'
-            self.assumptions_expected = assumptions_expected_str
+            assumptions_expected = assumptions_expected_str
         else:
             note['Assumptions'] = ''
-            self.assumptions_expected = ''
+            assumptions_expected = ''
+
+        self.context_container_expected = (
+            '<div class=\"context-container\">\n' +
+            context_expected +
+            assumptions_expected +
+            '</div>\n'
+        )
 
     @pytest.mark.parametrize('hint_fields', [(), ('EQ1', 'EQ2')])
-    @pytest.mark.parametrize('model', ['EQ', 'EQ (assumptions)'])
-    def test_eq(self, col, model, with_assumptions, hint_fields):
-        eq = col.models.by_name(model)
+    def test_eq(self, col, with_context: bool, with_assumptions: bool, hint_fields: Sequence[str]):
+        eq = col.models.by_name('EQ')
         basic = col.models.by_name('Basic')
 
         n1 = col.new_note(eq)
-        self.fill_im_eq_note(n1, with_assumptions, hint_fields)
+        self.fill_im_eq_note(n1, with_context, with_assumptions, hint_fields)
         col.add_note(n1, 0)
 
         n2 = col.new_note(basic)
@@ -262,19 +279,18 @@ class TestImEq():
 
         assert n2['Front'] == (
             f'<span class="sync" note="{n1.id}">\n' +
-            self.assumptions_expected +
+            self.context_container_expected +
             f'<div class="first-upper">EQ1{n1["Delimiter"]}EQ2.</div>\n'
             '</span>'
         )
 
     @pytest.mark.parametrize('hint_fields', [(), ('EQ1', 'EQ2')])
-    @pytest.mark.parametrize('model', ['EQ (TEX)', 'EQ (TEX, assumptions)'])
-    def test_eq_tex(self, col, model, with_assumptions, hint_fields):
-        m = col.models.by_name(model)
+    def test_eq_tex(self, col, with_context: bool, with_assumptions: bool, hint_fields: Sequence[str]):
+        m = col.models.by_name('EQ (TEX)')
         basic = col.models.by_name('Basic')
 
         n1 = col.new_note(m)
-        self.fill_im_eq_note(n1, with_assumptions, hint_fields)
+        self.fill_im_eq_note(n1, with_context, with_assumptions, hint_fields)
         col.add_note(n1, 0)
 
         n2 = col.new_note(basic)
@@ -286,19 +302,18 @@ class TestImEq():
 
         assert n2['Front'] == (
             f'<span class="sync" note="{n1.id}">\n' +
-            self.assumptions_expected +
+            self.context_container_expected +
             f'<div>\\[EQ1 {n1["Delimiter"]} EQ2\\]</div>\n'
             '</span>'
         )
 
     @pytest.mark.parametrize('hint_fields', [(), ('Cloze')])
-    @pytest.mark.parametrize('model', ['IM', 'IM (assumptions)'])
-    def test_im(self, col, model, with_assumptions, hint_fields):
-        m = col.models.by_name(model)
+    def test_im(self, col, with_context: bool, with_assumptions: bool, hint_fields: Sequence[str]):
+        m = col.models.by_name('IM')
         basic = col.models.by_name('Basic')
 
         n1 = col.new_note(m)
-        self.fill_im_eq_note(n1, with_assumptions, hint_fields)
+        self.fill_im_eq_note(n1, with_context, with_assumptions, hint_fields)
         col.add_note(n1, 0)
 
         n2 = col.new_note(basic)
@@ -310,19 +325,18 @@ class TestImEq():
 
         assert n2['Front'] == (
             f'<span class="sync" note="{n1.id}">\n' +
-            self.assumptions_expected +
+            self.context_container_expected +
             f'<div class="first-upper">{n1["Context Left"]}Cloze.</div>\n'
             '</span>'
         )
 
     @pytest.mark.parametrize('hint_fields', [(), ('Cloze Left', 'Cloze Right')])
-    @pytest.mark.parametrize('model', ['IM (reversed)', 'IM (assumptions, reversed)'])
-    def test_im_reversed(self, col, model, with_assumptions, hint_fields):
-        m = col.models.by_name(model)
+    def test_im_reversed(self, col, with_context: bool, with_assumptions: bool, hint_fields: Sequence[str]):
+        m = col.models.by_name('IM (reversed)')
         basic = col.models.by_name('Basic')
 
         n1 = col.new_note(m)
-        self.fill_im_eq_note(n1, with_assumptions, hint_fields)
+        self.fill_im_eq_note(n1, with_context, with_assumptions, hint_fields)
         col.add_note(n1, 0)
 
         n2 = col.new_note(basic)
@@ -334,21 +348,19 @@ class TestImEq():
 
         assert n2['Front'] == (
             f'<span class="sync" note="{n1.id}">\n' +
-            self.assumptions_expected +
+            self.context_container_expected +
             f'<div class="first-upper">{n1["Context Left"]}Cloze Left{n1["Context Middle"]}Cloze Right.</div>\n'
             '</span>'
         )
 
     @pytest.mark.parametrize('hint_fields', [(), ('Cloze Left', 'Cloze Right')])
-    @pytest.mark.parametrize(
-        'model', ['IM (TEX)', 'IM (TEX, assumptions)',
-                  'IM (TEX, reversed)', 'IM (TEX, assumptions, reversed)'])
-    def test_im_tex(self, col, model, with_assumptions, hint_fields):
+    @pytest.mark.parametrize('model', ['IM (TEX)', 'IM (TEX, reversed)'])
+    def test_im_tex(self, col, model, with_context: bool, with_assumptions: bool, hint_fields: Sequence[str]):
         m = col.models.by_name(model)
         basic = col.models.by_name('Basic')
 
         n1 = col.new_note(m)
-        self.fill_im_eq_note(n1, with_assumptions, hint_fields)
+        self.fill_im_eq_note(n1, with_context, with_assumptions, hint_fields)
         col.add_note(n1, 0)
 
         n2 = col.new_note(basic)
@@ -360,8 +372,8 @@ class TestImEq():
 
         assert n2['Front'] == (
             f'<span class="sync" note="{n1.id}">\n' +
-            self.assumptions_expected +
-            f'<div>\\[Cloze Left {n1["Context Middle"]} Cloze Right\\]</div>\n'
+            self.context_container_expected +
+            f'<div>\\[Cloze Left {n1["Delimiter"]} Cloze Right\\]</div>\n'
             '</span>'
         )
 
