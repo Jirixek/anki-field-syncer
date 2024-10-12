@@ -1,2 +1,3 @@
-anki
-aqt[qt6]
+anki==24.6.3
+aqt[qt6]==24.6.3
+pytest==8.3.3
