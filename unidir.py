@@ -1,11 +1,12 @@
-import re
-import anki
-import os
 from copy import copy
+import os
+import re
+from typing import NamedTuple
+import warnings
+
+import anki
 from aqt import mw
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
-import warnings
-from typing import NamedTuple
 
 warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning)
 

@@ -1,7 +1,9 @@
 import re
+
+import pytest
+
 from . import bidir
 from .test_utils import get_empty_col, load_notes
-import pytest
 
 
 @pytest.fixture

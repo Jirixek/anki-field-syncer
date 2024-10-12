@@ -1,6 +1,7 @@
 import anki
 from aqt import gui_hooks, mw
-from . import unidir, bidir
+
+from . import bidir, unidir
 
 
 def on_editor_did_unfocus_field(changed: bool, note: anki.notes.Note, field_idx: int) -> bool:

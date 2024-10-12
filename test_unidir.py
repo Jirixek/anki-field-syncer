@@ -1,7 +1,9 @@
-import pytest
-import anki
-from . import unidir
 from typing import Sequence
+
+import anki
+import pytest
+
+from . import unidir
 from .test_utils import get_empty_col, load_notes
 
 

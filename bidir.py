@@ -1,10 +1,11 @@
+from copy import copy
+from random import randrange
+from typing import Callable, Sequence
+import warnings
+
 import anki
 from aqt.utils import askUserDialog
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
-from copy import copy
-import warnings
-from typing import Sequence, Callable
-from random import randrange
 
 warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning, module='bs4')
 

@@ -1,9 +1,10 @@
-import anki
 import os
 import shutil
 import tempfile
-from anki.collection import Collection as aopen
 from typing import Sequence
+
+import anki
+from anki.collection import Collection as aopen
 
 
 # Creating new decks is expensive. Just do it once, and then spin off
