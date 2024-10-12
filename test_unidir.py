@@ -15,8 +15,8 @@
 
 from typing import Sequence
 
-import anki
 import pytest
+from anki.notes import Note
 
 from . import unidir
 from .test_utils import get_empty_col, load_notes
@@ -242,7 +242,7 @@ def test_dont_change_spans_without_sync_class(col):
 @pytest.mark.parametrize('with_context', [False, True])
 @pytest.mark.parametrize('with_assumptions', [False, True])
 class TestImEq():
-    def fill_im_eq_note(self, note: anki.notes.Note, with_context: bool,
+    def fill_im_eq_note(self, note: Note, with_context: bool,
                         with_assumptions: bool, hint_fields: Sequence[str]):
         hint_fields = set(hint_fields)
         for key in note.keys():

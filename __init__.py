@@ -13,13 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import anki
+import anki.collection  # isort:skip # noqa: F401
+from anki.notes import Note
 from aqt import gui_hooks, mw
 
 from . import bidir, unidir
 
 
-def on_editor_did_unfocus_field(changed: bool, note: anki.notes.Note, field_idx: int) -> bool:
+def on_editor_did_unfocus_field(changed: bool, note: Note, field_idx: int) -> bool:
     # return True if changes were made, otherwise return changed
     changed |= unidir.sync_field(mw.col, note, field_idx)
     changed |= bidir.sync_field(mw.col, note, field_idx)

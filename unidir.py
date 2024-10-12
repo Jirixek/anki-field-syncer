@@ -13,13 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from copy import copy
 import os
 import re
-from typing import NamedTuple
 import warnings
+from copy import copy
+from typing import NamedTuple
 
-import anki
+import anki.errors
+from anki.collection import Collection
+from anki.notes import Note
 from aqt import mw
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 
@@ -48,7 +50,7 @@ class Fetcher():
 
     template_cache = {}
 
-    def __init__(self, this_note: anki.notes.Note, other_note: anki.notes.Note):
+    def __init__(self, this_note: Note, other_note: Note):
         self.this_note = this_note
         self.other_note = other_note
         self.other_notetype = self.other_note.note_type()['name']
@@ -177,7 +179,7 @@ class Fetcher():
         return BeautifulSoup(out, 'html.parser')
 
 
-def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int) -> bool:
+def sync_field(col: Collection, this_note: Note, field_idx: int) -> bool:
     # - find span with class 'sync' with 'note' attribute
     # - fetch optional 'fields' attribute (can contain special fields: text)
     # - or use defaults depending on the target note type)
@@ -229,7 +231,7 @@ def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int)
     return changed
 
 
-def sync_note(col: anki.Collection, note: anki.notes.Note) -> bool:
+def sync_note(col: Collection, note: Note) -> bool:
     changed = False
     for field in note.keys():
         changed |= sync_field(col, note, note._field_index(field))

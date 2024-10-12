@@ -13,12 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import warnings
 from copy import copy
 from random import randrange
 from typing import Callable, Sequence
-import warnings
 
-import anki
+from anki.collection import Collection
+from anki.notes import Note, NoteId
 from aqt.utils import askUserDialog
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 
@@ -31,7 +32,7 @@ def default_popup(sid: str) -> str:
     return askUserDialog(f'Span with sid {sid} has changed.', ('Upload', 'Download')).run()
 
 
-def generate_sid(col: anki.Collection, note: anki.notes.Note, field_idx: int) -> str:
+def generate_sid(col: Collection, note: Note, field_idx: int) -> str:
     def generate_sid_internal():
         return f'{note.id}_{field_idx}_{randrange(0, 10000):04}'
     sid = generate_sid_internal()
@@ -40,7 +41,7 @@ def generate_sid(col: anki.Collection, note: anki.notes.Note, field_idx: int) ->
     return sid
 
 
-def are_spans_coherent(col: anki.Collection, nids: Sequence[anki.notes.NoteId], sid: int) -> bool:
+def are_spans_coherent(col: Collection, nids: Sequence[NoteId], sid: int) -> bool:
     if len(nids) <= 1:
         return True
 
@@ -58,7 +59,7 @@ def are_spans_coherent(col: anki.Collection, nids: Sequence[anki.notes.NoteId], 
     return True
 
 
-def upload(col: anki.Collection, nids: Sequence[anki.notes.NoteId], span: BeautifulSoup):
+def upload(col: Collection, nids: Sequence[NoteId], span: BeautifulSoup):
     '''
     Upload a span to all given notes. Span must have a sid attribute.
     '''
@@ -76,7 +77,7 @@ def upload(col: anki.Collection, nids: Sequence[anki.notes.NoteId], span: Beauti
         col.update_note(note)
 
 
-def download(col: anki.Collection, nid: anki.notes.NoteId, sid: int):
+def download(col: Collection, nid: NoteId, sid: int):
     '''
     Return value of random span with the sid given notes to search in.
     '''
@@ -89,7 +90,7 @@ def download(col: anki.Collection, nid: anki.notes.NoteId, sid: int):
     return None
 
 
-def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int,
+def sync_field(col: Collection, this_note: Note, field_idx: int,
                popup: Popup = default_popup) -> bool:
     if this_note.id == 0:
         return False  # the card is being created

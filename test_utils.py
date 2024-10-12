@@ -18,16 +18,15 @@ import shutil
 import tempfile
 from typing import Sequence
 
-import anki
-from anki.collection import Collection as aopen
-
+from anki.collection import Collection
+from anki.notes import Note
 
 # Creating new decks is expensive. Just do it once, and then spin off
 # copies from the master.
 _empty_col: str | None = None
 
 
-def _create_custom_notes(col: anki.Collection):
+def _create_custom_notes(col: Collection):
     CUSTOM_NOTES = {
         'EQ': ('EQ1', 'Delimiter', 'EQ2', 'Context', 'Assumptions'),
         'EQ (TEX)': ('EQ1', 'Delimiter', 'EQ2', 'Context', 'Assumptions'),
@@ -55,16 +54,16 @@ def get_empty_col():
         (fd, path) = tempfile.mkstemp(suffix='.anki2')
         os.close(fd)
         os.unlink(path)
-        col = aopen(path)
+        col = Collection(path)
         _create_custom_notes(col)
         col.close(downgrade=False)
         _empty_col = path
     (fd, path) = tempfile.mkstemp(suffix='.anki2')
     shutil.copy(_empty_col, path)
-    col = aopen(path)
+    col = Collection(path)
     return col
 
 
-def load_notes(notes: Sequence[anki.notes.Note]):
+def load_notes(notes: Sequence[Note]):
     for note in notes:
         note.load()
