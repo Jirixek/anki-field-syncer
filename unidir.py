@@ -209,6 +209,7 @@ def sync_field(col: anki.Collection, this_note: anki.notes.Note, field_idx: int)
 
     if changed:
         this_note.values()[field_idx] = bs.encode(formatter='html5').decode('utf-8')
+        # TODO: this_note might be reference
         col.update_note(this_note)
     return changed
 

@@ -14,7 +14,7 @@ class MockPopup():
         self.return_value = return_value
         self.n_called = 0
 
-    def __call__(self, _):
+    def __call__(self, sid: int):
         self.n_called += 1
         return self.return_value
 
