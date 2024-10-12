@@ -55,7 +55,7 @@ class Fetcher():
         try:
             if self.other_notetype not in self.template_cache:
                 with open(os.path.join(os.path.dirname(__file__),
-                                       f'./templates/{self.other_notetype}.html'), 'r') as f:
+                                       f'./user_files/templates/{self.other_notetype}.html'), 'r') as f:
                     self.template_cache[self.other_notetype] = self.tokenize(f.read())
         except IOError:
             raise ValueError('Unknown model')
