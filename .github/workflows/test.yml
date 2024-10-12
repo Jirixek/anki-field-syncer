@@ -1,12 +1,19 @@
-name: Spansync
+name: Notesync
 
 on: [push]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./notesync
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          # Change a folder because a Python module name can't have dashes
+          path: notesync
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
