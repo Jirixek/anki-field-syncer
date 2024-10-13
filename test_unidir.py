@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 from typing import Sequence
 
 import pytest
@@ -239,6 +240,7 @@ def test_dont_change_spans_without_sync_class(col):
     assert n2['Front'] == f'<span note="{n1.id}"></span>'
 
 
+@pytest.mark.skipif(not os.path.isfile('./user_files/templates/EQ.html'), reason='Eq.html exists')
 @pytest.mark.parametrize('with_context', [False, True])
 @pytest.mark.parametrize('with_assumptions', [False, True])
 class TestImEq():
