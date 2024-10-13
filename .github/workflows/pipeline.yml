@@ -54,9 +54,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           zip -r notesync-${{ github.ref_name }}.ankiaddon *
+          ls -l
 
       - name: Create a release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: notesync-${{ github.ref_name }}.ankiaddon
+          files: ./notesync-${{ github.ref_name }}.ankiaddon
